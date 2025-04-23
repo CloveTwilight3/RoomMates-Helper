@@ -16,7 +16,8 @@ import {
   DiscordAPIError,
   ButtonInteraction,
   Interaction,
-  Events
+  Events,
+  ModalSubmitInteraction
 } from 'discord.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -29,6 +30,14 @@ import {
   handleModVerifyCommand, 
   handleVerificationButton,
   handleVerificationDecision 
+} from './verification';
+
+// Also import these functions from the verification module
+import { 
+  handleVerificationContinue,
+  handleVerificationCancel,
+  handleVerificationUpload,
+  handleVerificationModal
 } from './verification';
 
 // Load environment variables from .env file
@@ -216,6 +225,295 @@ async function registerCommands() {
   }
 }
 
+// Handle the color select subcommand
+async function handleColorSelectCommand(interaction: ChatInputCommandInteraction) {
+  // Check if we have any color categories
+  if (Object.keys(colorCategories).length === 0) {
+    await interaction.reply({
+      content: 'No color roles found. Please contact a server administrator.',
+      ephemeral: true
+    });
+    return;
+  }
+
+  // Create a select menu for color categories
+  const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId('color_category_select')
+    .setPlaceholder('Choose a color category')
+    .addOptions(
+      Object.keys(colorCategories)
+        .filter(category => colorCategories[category].length > 0)
+        .map(category => 
+          new StringSelectMenuOptionBuilder()
+            .setLabel(category)
+            .setDescription(`${colorCategories[category].length} colors available`)
+            .setValue(category)
+        )
+    );
+
+  const row = new ActionRowBuilder<StringSelectMenuBuilder>()
+    .addComponents(selectMenu);
+
+  // Set a higher time limit for the interaction (2 minutes instead of 1)
+  const message = await interaction.reply({
+    content: 'Select a color category:',
+    components: [row],
+    ephemeral: true,
+    fetchReply: true // Make sure to fetch the reply for the collector
+  });
+
+  // Set up a collector for the menu interaction
+  const filter = (i: any) => i.user.id === interaction.user.id;
+  const collector = message.createMessageComponentCollector({
+    filter,
+    time: 120000, // Increased timeout to 2 minutes
+    componentType: ComponentType.StringSelect
+  });
+
+  collector.on('collect', async (i) => {
+    try {
+      if (i.customId === 'color_category_select') {
+        const selectedCategory = i.values[0];
+        await showColorsForCategory(i, selectedCategory);
+      }
+      else if (i.customId === 'color_select') {
+        const roleId = i.values[0];
+        await assignColorRole(i, roleId);
+      }
+    } catch (error) {
+      // Handle any errors that occur during interaction
+      console.error('Error handling interaction:', error);
+      
+      // Only attempt to reply if the interaction hasn't been responded to yet
+      if (!i.replied && !i.deferred) {
+        try {
+          await i.reply({
+            content: 'An error occurred while processing your selection. Please try again.',
+            ephemeral: true
+          });
+        } catch (replyError) {
+          console.error('Error sending error message:', replyError);
+        }
+      }
+    }
+  });
+
+  collector.on('end', async (collected, reason) => {
+    if (reason === 'time') {
+      try {
+        // Check if the message still exists and can be edited
+        await interaction.editReply({
+          content: 'Color selection timed out. Please use the command again if you still want to select a color.',
+          components: []
+        });
+      } catch (error) {
+        console.error('Error updating message after timeout:', error);
+      }
+    }
+  });
+}
+
+// Show colors for a specific category
+async function showColorsForCategory(interaction: any, category: string) {
+  try {
+    if (!colorCategories[category] || colorCategories[category].length === 0) {
+      await interaction.update({
+        content: 'No colors available in this category. Please try another one.',
+        components: []
+      }).catch((error: any) => {
+        console.error('Error updating interaction with no colors message:', error);
+      });
+      return;
+    }
+
+    // Get colors from this category
+    const colors = colorCategories[category];
+    
+    // Discord has a 25-option limit for select menus
+    const maxOptionsPerMenu = 25;
+    
+    // If we have more than 25 colors, we'll need to handle it
+    if (colors.length > maxOptionsPerMenu) {
+      // For simplicity, just take the first 25 for now
+      // In a production bot, you'd implement pagination here
+      const colorsToShow = colors.slice(0, maxOptionsPerMenu);
+      
+      const colorSelect = new StringSelectMenuBuilder()
+        .setCustomId('color_select')
+        .setPlaceholder(`Choose a color from ${category}`)
+        .addOptions(
+          colorsToShow.map(color => 
+            new StringSelectMenuOptionBuilder()
+              .setLabel(color.name)
+              .setValue(color.id)
+          )
+        );
+
+      const row = new ActionRowBuilder<StringSelectMenuBuilder>()
+        .addComponents(colorSelect);
+
+      await interaction.update({
+        content: `Select a color from ${category} (showing first ${maxOptionsPerMenu} of ${colors.length}):`,
+        components: [row]
+      }).catch((error: any) => {
+        console.error('Error updating interaction with color options:', error);
+      });
+    } else {
+      const colorSelect = new StringSelectMenuBuilder()
+        .setCustomId('color_select')
+        .setPlaceholder(`Choose a color from ${category}`)
+        .addOptions(
+          colors.map(color => 
+            new StringSelectMenuOptionBuilder()
+              .setLabel(color.name)
+              .setValue(color.id)
+          )
+        );
+
+      const row = new ActionRowBuilder<StringSelectMenuBuilder>()
+        .addComponents(colorSelect);
+
+      await interaction.update({
+        content: `Select a color from ${category}:`,
+        components: [row]
+      }).catch((error: any) => {
+        console.error('Error updating interaction with color options:', error);
+        
+        // If the error is an Unknown Interaction error, the interaction has expired
+        if (error instanceof DiscordAPIError && error.code === 10062) {
+          console.log('Interaction has expired. The user will need to run the command again.');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error in showColorsForCategory:', error);
+  }
+}
+
+// Assign the selected color role
+async function assignColorRole(interaction: any, roleId: string) {
+  try {
+    if (!interaction.guild) {
+      await interaction.update({
+        content: 'This command can only be used in a server!',
+        components: []
+      }).catch((error: any) => {
+        console.error('Error updating interaction with guild error message:', error);
+      });
+      return;
+    }
+
+    const member = interaction.guild.members.cache.get(interaction.user.id);
+    if (!member) {
+      await interaction.update({
+        content: 'Could not find you in this server!',
+        components: []
+      }).catch((error: any) => {
+        console.error('Error updating interaction with member error message:', error);
+      });
+      return;
+    }
+
+    // Find the role
+    const role = interaction.guild.roles.cache.get(roleId);
+    if (!role) {
+      await interaction.update({
+        content: 'Error: Color role not found. Please try again or contact an admin.',
+        components: []
+      }).catch((error: any) => {
+        console.error('Error updating interaction with role error message:', error);
+      });
+      return;
+    }
+
+    try {
+      // Remove any existing color roles
+      await removeExistingColorRoles(member);
+      
+      // Assign the new role
+      await member.roles.add(role);
+      
+      // Create an embed to show the result
+      const embed = new EmbedBuilder()
+        .setTitle('Color Changed!')
+        .setDescription(`You now have the ${role.name} color!`)
+        .setColor(role.color);
+      
+      await interaction.update({
+        content: '',
+        embeds: [embed],
+        components: []
+      }).catch((error: any) => {
+        console.error('Error updating interaction with success message:', error);
+        
+        // If it's an Unknown Interaction error, just log it
+        if (error instanceof DiscordAPIError && error.code === 10062) {
+          console.log('Interaction has expired, but the role was still assigned successfully.');
+        }
+      });
+    } catch (error) {
+      console.error('Error assigning color role:', error);
+      
+      // Try to update the interaction with an error message
+      try {
+        await interaction.update({
+          content: 'There was an error assigning the color role. Please try again later.',
+          components: []
+        });
+      } catch (updateError) {
+        console.error('Error sending error message:', updateError);
+      }
+    }
+  } catch (error) {
+    console.error('Error in assignColorRole:', error);
+  }
+}
+
+// Handle the color remove subcommand
+async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction, member: any) {
+  try {
+    const removed = await removeExistingColorRoles(member);
+    
+    if (removed) {
+      await interaction.reply({ 
+        content: 'Your color role has been removed!', 
+        ephemeral: true 
+      });
+    } else {
+      await interaction.reply({ 
+        content: 'You don\'t have any color roles to remove.', 
+        ephemeral: true 
+      });
+    }
+  } catch (error) {
+    console.error('Error removing color roles:', error);
+    await interaction.reply({ 
+      content: 'There was an error removing your color roles. Please try again later.', 
+      ephemeral: true 
+    });
+  }
+}
+
+// Helper function to remove existing color roles
+async function removeExistingColorRoles(member: any) {
+  // Get all color role IDs
+  const colorRoleIds = new Set<string>();
+  colorRoles.forEach(role => {
+    colorRoleIds.add(role.id);
+  });
+  
+  // Filter member's roles to find color roles
+  const colorRolesToRemove = member.roles.cache.filter((role: Role) => colorRoleIds.has(role.id));
+  
+  if (colorRolesToRemove.size === 0) {
+    return false;
+  }
+  
+  // Remove the color roles
+  await member.roles.remove(colorRolesToRemove);
+  return true;
+}
+
 // When the client is ready, run this code (only once)
 client.once('ready', async () => {
   console.log(`${BOT_NAME} is online and ready to serve ${SERVER_NAME}!`);
@@ -298,7 +596,7 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
       await interaction.reply({ 
         content: 'There was an error executing this command. Please try again later.', 
         ephemeral: true 
-      }).catch(err => console.error('Error sending error message:', err));
+      }).catch((err) => console.error('Error sending error message:', err));
     }
   }
 }
@@ -349,7 +647,7 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       await interaction.reply({ 
         content: 'There was an error processing this button. Please try again later.', 
         ephemeral: true 
-      }).catch(err => console.error('Error sending error message:', err));
+      }).catch((err) => console.error('Error sending error message:', err));
     }
   }
 }
@@ -378,7 +676,10 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
       await interaction.reply({ 
         content: 'There was an error processing this submission. Please try again later.', 
         ephemeral: true 
-      }).catch(err => console.error('Error sending error message:', err));
+      }).catch((err) => console.error('Error sending error message:', err));
     }
   }
 }
+
+// Login to Discord with your app's token
+client.login(TOKEN);

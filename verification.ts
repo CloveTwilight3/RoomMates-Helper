@@ -825,3 +825,11 @@ async function processDenial(interaction: ButtonInteraction, member: GuildMember
     });
   }
 }
+
+// Export these additional functions to make them accessible from bot.ts
+export { 
+  handleVerificationContinue, 
+  handleVerificationCancel, 
+  handleVerificationUpload, 
+  handleVerificationModal 
+};
