@@ -711,12 +711,25 @@ export async function handleVerificationDecision(interaction: ButtonInteraction)
     // Disable the buttons
     try {
       const message = await interaction.message.fetch();
-      const disabledRow = ActionRowBuilder.from(message.components[0] as any).setComponents(
-        ButtonBuilder.from((message.components[0] as any).components[0] as any).setDisabled(true),
-        ButtonBuilder.from((message.components[0] as any).components[1] as any).setDisabled(true)
-      );
       
-      await interaction.message.edit({ components: [disabledRow] });
+      // Create a new disabled row instead of trying to convert the existing one
+      const disabledButtons = [
+        new ButtonBuilder()
+          .setCustomId((message.components[0] as any).components[0].customId)
+          .setLabel((message.components[0] as any).components[0].label)
+          .setStyle((message.components[0] as any).components[0].style)
+          .setDisabled(true),
+        new ButtonBuilder()
+          .setCustomId((message.components[0] as any).components[1].customId)
+          .setLabel((message.components[0] as any).components[1].label)
+          .setStyle((message.components[0] as any).components[1].style)
+          .setDisabled(true)
+      ];
+      
+      const newRow = new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(disabledButtons);
+      
+      await interaction.message.edit({ components: [newRow] });
     } catch (error) {
       console.error("Error disabling buttons:", error);
     }
