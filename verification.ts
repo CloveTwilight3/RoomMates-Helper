@@ -387,6 +387,12 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
         ephemeral: true
       });
     }
+  } catch (error) {
+    console.error("Error starting verification:", error);
+    await interaction.reply({
+      content: 'Sorry, there was an error starting the verification process. Please try again later.',
+      ephemeral: true
+    });
   }
 }
 
@@ -403,7 +409,7 @@ export async function handleVerificationContinue(interaction: ButtonInteraction)
   const customId = interaction.customId;
   const userId = customId.split('_').pop();
   
-  if (userId !== interaction.user.id) {
+  if (!userId || userId !== interaction.user.id) {
     await interaction.reply({ content: 'This button is not for you.', ephemeral: true });
     return;
   }
@@ -445,7 +451,7 @@ export async function handleVerificationCancel(interaction: ButtonInteraction) {
   const customId = interaction.customId;
   const userId = customId.split('_').pop();
   
-  if (userId !== interaction.user.id) {
+  if (!userId || userId !== interaction.user.id) {
     await interaction.reply({ content: 'This button is not for you.', ephemeral: true });
     return;
   }
@@ -511,7 +517,7 @@ export async function handleVerificationUpload(interaction: ButtonInteraction) {
   const customId = interaction.customId;
   const userId = customId.split('_').pop();
   
-  if (userId !== interaction.user.id) {
+  if (!userId || userId !== interaction.user.id) {
     await interaction.reply({ content: 'This button is not for you.', ephemeral: true });
     return;
   }
@@ -825,11 +831,3 @@ async function processDenial(interaction: ButtonInteraction, member: GuildMember
     });
   }
 }
-
-// Export these additional functions to make them accessible from bot.ts
-export { 
-  handleVerificationContinue, 
-  handleVerificationCancel, 
-  handleVerificationUpload, 
-  handleVerificationModal 
-};
