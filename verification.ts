@@ -30,6 +30,7 @@ import {
   MessageCreateOptions,
   InteractionResponse
 } from 'discord.js';
+import fs from 'fs';
 
 // Define the structure for pending verifications
 interface PendingVerification {
@@ -49,9 +50,40 @@ const pendingVerifications = new Map<string, PendingVerification>();
 const VERIFICATION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const APPROVAL_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 
-// Configuration options - to be read from .env
-const MOD_CHANNEL_ID = process.env.MOD_CHANNEL_ID;
+// Configuration options - use let to allow changing it at runtime
+let MOD_CHANNEL_ID = process.env.MOD_CHANNEL_ID;
 const VERIFICATION_ROLE_ID = '1344892607255547944'; // 18+ role ID
+const CONFIG_FILE = 'verification_config.json';
+
+// Function to load verification config
+function loadVerificationConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      if (configData.MOD_CHANNEL_ID) {
+        MOD_CHANNEL_ID = configData.MOD_CHANNEL_ID;
+        console.log(`Loaded verification channel ID: ${MOD_CHANNEL_ID}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error loading verification config:", error);
+  }
+}
+
+// Function to save verification config
+function saveVerificationConfig(channelId: string) {
+  try {
+    const configData = {
+      MOD_CHANNEL_ID: channelId
+    };
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(configData, null, 2));
+    MOD_CHANNEL_ID = channelId;
+    console.log(`Saved verification channel ID: ${MOD_CHANNEL_ID}`);
+  } catch (error) {
+    console.error("Error saving verification config:", error);
+    throw error;
+  }
+}
 
 /**
  * Register verification-related commands
@@ -79,6 +111,11 @@ export function registerVerificationCommands(commandsArray: any[]) {
             .setRequired(true)
         )
     )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('status')
+        .setDescription('Check the current verification settings')
+    )
     .toJSON();
 
   commandsArray.push(verifyCommand, modVerifyCommand);
@@ -88,6 +125,9 @@ export function registerVerificationCommands(commandsArray: any[]) {
  * Set up event handlers for verification system
  */
 export function setupVerificationSystem(client: Client) {
+  // Load verification config at startup
+  loadVerificationConfig();
+  
   // Check for expired verification requests periodically
   setInterval(() => {
     const now = Date.now();
@@ -246,15 +286,15 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
       return;
     }
     
-    // In a real implementation, we would save this to a database
-    // For now, we'll save it to an environment variable or config file
-    process.env.MOD_CHANNEL_ID = channel.id;
-    
-    // Send a test message to confirm permissions
+    // Save the channel ID to the config file
     try {
+      // Send a test message to confirm permissions
       const testMsg = await (channel as TextChannel).send({
         content: 'Verification channel set successfully! This is a test message to confirm permissions.',
       });
+      
+      // If the message was sent successfully, save the config
+      saveVerificationConfig(channel.id);
       
       // Delete the test message after 5 seconds
       setTimeout(() => {
@@ -269,6 +309,27 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
       console.error("Failed to send test message to channel:", error);
       await interaction.reply({
         content: `I don't have permission to send messages in ${channel.toString()}. Please check my permissions.`,
+        ephemeral: true
+      });
+    }
+  } else if (subcommand === 'status') {
+    // Show current configuration
+    if (MOD_CHANNEL_ID) {
+      try {
+        const channel = await interaction.client.channels.fetch(MOD_CHANNEL_ID);
+        await interaction.reply({
+          content: `Current verification channel: ${channel ? channel.toString() : 'Unknown (ID: ' + MOD_CHANNEL_ID + ')'}`,
+          ephemeral: true
+        });
+      } catch (error) {
+        await interaction.reply({
+          content: `Current verification channel ID is set to: ${MOD_CHANNEL_ID}, but I couldn't fetch the channel. It may have been deleted.`,
+          ephemeral: true
+        });
+      }
+    } else {
+      await interaction.reply({
+        content: 'No verification channel has been set. Use `/modverify setchannel` to set one.',
         ephemeral: true
       });
     }
