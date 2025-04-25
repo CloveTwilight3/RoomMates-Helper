@@ -1,4 +1,4 @@
-// Zahra Bot - Color Role Assignment Bot with verification system
+// The Roommates Helper - Color Role Assignment Bot with verification system
 import { 
   Client, 
   GatewayIntentBits, 
@@ -40,11 +40,18 @@ import {
   handleVerificationModal
 } from './verification';
 
+// Import health check system
+import { writeHealthStatus } from './healthcheck';
+
+// Track bot startup time
+const startTime = Date.now();
+writeHealthStatus('starting', startTime);
+
 // Load environment variables from .env file
 dotenv.config();
 
 // Bot configuration
-const BOT_NAME = "Zahra";
+const BOT_NAME = "The Roommates Helper";
 const SERVER_NAME = "Roommates";
 const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.CLIENT_ID!;
@@ -118,6 +125,7 @@ function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void 
     
   } catch (error) {
     console.error(`Error loading color roles from ${filePath}:`, error);
+    writeHealthStatus('offline', startTime);
   }
 }
 
@@ -222,6 +230,7 @@ async function registerCommands() {
     }
   } catch (error) {
     console.error('Error registering commands:', error);
+    writeHealthStatus('offline', startTime);
   }
 }
 
@@ -530,6 +539,20 @@ client.once('ready', async () => {
   
   // Set up the verification system
   setupVerificationSystem(client);
+  
+  // Update health status when bot is ready
+  writeHealthStatus('online', startTime);
+  
+  // Set up a heartbeat interval
+  setInterval(() => {
+    writeHealthStatus('online', startTime);
+  }, 60 * 1000); // Every minute
+});
+
+// Handle errors
+client.on('error', (error) => {
+  console.error('Discord client error:', error);
+  writeHealthStatus('offline', startTime);
 });
 
 // Handle interactions (commands, buttons, modals)

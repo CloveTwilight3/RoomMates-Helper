@@ -47,7 +47,7 @@ interface PendingVerification {
 const pendingVerifications = new Map<string, PendingVerification>();
 
 // Constants
-const VERIFICATION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+const VERIFICATION_TIMEOUT = 24 * 60 * 60 * 1000; // 15 minutes
 const APPROVAL_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 
 // Configuration options - use let to allow changing it at runtime

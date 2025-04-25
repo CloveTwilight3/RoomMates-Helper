@@ -1,17 +1,19 @@
 {
-  "name": "zahra-bot",
+  "name": "roommates-helper",
   "version": "1.0.0",
-  "description": "Zahra - A utility bot for the Roommates Discord server",
+  "description": "The Roommates Helper - A utility bot for the Roommates Discord server",
   "main": "dist/bot.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/bot.js",
-    "dev": "ts-node bot.ts"
+    "dev": "ts-node bot.ts",
+    "fetch-roles": "ts-node fetch-server-roles.ts"
   },
   "keywords": [
     "discord",
     "bot",
-    "typescript"
+    "typescript",
+    "docker"
   ],
   "author": "CloveTwilight3",
   "license": "MIT",
