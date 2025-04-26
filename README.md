@@ -4,6 +4,7 @@ A Discord bot designed to help manage the Roommates Discord server with features
 
 - Color role assignment system
 - Age verification system for 18+ content
+- Auto-role assignment for new members
 - Role management utilities
 
 ## Setup Instructions
@@ -59,9 +60,17 @@ To fetch your server's roles for the color role system:
    ```
    /modverify setchannel #your-mod-channel
    ```
-3. Add a verification prompt in any channel:
+3. Configure the "Age Unverified" role for new members:
+   ```
+   /modverify setrole @Age-Unverified
+   ```
+4. Add a verification prompt in any channel:
    ```
    /verify
+   ```
+5. Check your verification configuration:
+   ```
+   /modverify status
    ```
 
 ## Features
@@ -73,7 +82,63 @@ To fetch your server's roles for the color role system:
 ### Verification System
 - `/verify` - Create a verification button for age-restricted content
 - `/modverify setchannel` - Set the channel for verification reviews
+- `/modverify setrole` - Set the role for unverified members
 - `/modverify status` - Check verification system status
+
+### Auto-Role System
+- The bot automatically assigns the "Age Unverified" role to new members when they join
+- Upon successful verification, the "Age Unverified" role is removed and the "18+" role is added
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Discord Bot Configuration
+DISCORD_TOKEN=your_discord_bot_token_here
+CLIENT_ID=your_discord_application_client_id
+GUILD_ID=your_server_id_for_development_testing
+
+# Verification System
+MOD_CHANNEL_ID=your_moderator_channel_id
+AGE_UNVERIFIED_ROLE_ID=your_age_unverified_role_id
+```
+
+## Development
+
+### Project Structure
+
+- `bot.ts` - Main bot file with color role management and event handlers
+- `verification.ts` - Age verification system
+- `healthcheck.ts` - Bot health monitoring system
+- `fetch-server-roles.ts` - Utility to fetch roles from the server
+
+### Adding New Features
+
+To add new features:
+
+1. Add relevant command definitions in `registerCommands()`
+2. Implement command handlers in `handleCommandInteraction()`
+3. Add any needed event listeners
+
+## Troubleshooting
+
+### Bot Doesn't Respond to Commands
+
+- Check if the bot is online with `docker-compose logs` or by checking its status in Discord
+- Ensure the bot has the correct permissions in your server
+- Make sure you've registered commands using the correct Guild ID
+
+### Verification Issues
+
+- Make sure you've set up a verification channel using `/modverify setchannel`
+- Check if the bot has permissions to send messages in that channel
+- Ensure the "Age Unverified" role exists and has been set with `/modverify setrole`
+
+### Color Role Issues
+
+- Make sure `roommates_roles.txt` exists and contains valid role data
+- Run `npx ts-node fetch-server-roles.ts` to update the roles file
 
 ## License
 

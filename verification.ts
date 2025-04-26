@@ -1,4 +1,4 @@
-// verification.ts - Implement age verification system for Zahra
+// verification.ts - Implement age verification system for Helper
 import { 
   Client, 
   ButtonInteraction,
@@ -43,6 +43,12 @@ interface PendingVerification {
   step: 'initiated' | 'awaiting_upload' | 'reviewing' | 'completed' // Track verification step
 }
 
+// Update the config interface for typing
+interface VerificationConfig {
+  MOD_CHANNEL_ID?: string;
+  AGE_UNVERIFIED_ROLE_ID?: string;
+}
+
 // Cache for pending verifications
 const pendingVerifications = new Map<string, PendingVerification>();
 
@@ -53,16 +59,22 @@ const APPROVAL_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 // Configuration options - use let to allow changing it at runtime
 let MOD_CHANNEL_ID = process.env.MOD_CHANNEL_ID;
 const VERIFICATION_ROLE_ID = '1344892607255547944'; // 18+ role ID
+// Add this new line
+let AGE_UNVERIFIED_ROLE_ID = process.env.AGE_UNVERIFIED_ROLE_ID;
 const CONFIG_FILE = 'verification_config.json';
 
 // Function to load verification config
 function loadVerificationConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
-      const configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      const configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) as VerificationConfig;
       if (configData.MOD_CHANNEL_ID) {
         MOD_CHANNEL_ID = configData.MOD_CHANNEL_ID;
         console.log(`Loaded verification channel ID: ${MOD_CHANNEL_ID}`);
+      }
+      if (configData.AGE_UNVERIFIED_ROLE_ID) {
+        AGE_UNVERIFIED_ROLE_ID = configData.AGE_UNVERIFIED_ROLE_ID;
+        console.log(`Loaded Age Unverified role ID: ${AGE_UNVERIFIED_ROLE_ID}`);
       }
     }
   } catch (error) {
@@ -71,18 +83,36 @@ function loadVerificationConfig() {
 }
 
 // Function to save verification config
-function saveVerificationConfig(channelId: string) {
+function saveVerificationConfig(channelId: string, unverifiedRoleId?: string) {
   try {
-    const configData = {
-      MOD_CHANNEL_ID: channelId
-    };
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(configData, null, 2));
+    // Load existing config first
+    let configData: VerificationConfig = {};
+    if (fs.existsSync(CONFIG_FILE)) {
+      configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    }
+    
+    // Update values
+    configData.MOD_CHANNEL_ID = channelId;
     MOD_CHANNEL_ID = channelId;
     console.log(`Saved verification channel ID: ${MOD_CHANNEL_ID}`);
+    
+    // Only update unverified role ID if provided
+    if (unverifiedRoleId) {
+      configData.AGE_UNVERIFIED_ROLE_ID = unverifiedRoleId;
+      AGE_UNVERIFIED_ROLE_ID = unverifiedRoleId;
+      console.log(`Saved Age Unverified role ID: ${AGE_UNVERIFIED_ROLE_ID}`);
+    }
+    
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(configData, null, 2));
   } catch (error) {
     console.error("Error saving verification config:", error);
     throw error;
   }
+}
+
+// Add a getter function for the unverified role ID
+export function getAgeUnverifiedRoleId(): string | undefined {
+  return AGE_UNVERIFIED_ROLE_ID;
 }
 
 /**
@@ -108,6 +138,17 @@ export function registerVerificationCommands(commandsArray: any[]) {
           option
             .setName('channel')
             .setDescription('The channel where verification requests will be sent')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('setrole')
+        .setDescription('Set the Age Unverified role for new members')
+        .addRoleOption(option =>
+          option
+            .setName('role')
+            .setDescription('The role to assign to new unverified members')
             .setRequired(true)
         )
     )
@@ -312,24 +353,76 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
         ephemeral: true
       });
     }
-  } else if (subcommand === 'status') {
-    // Show current configuration
-    if (MOD_CHANNEL_ID) {
-      try {
-        const channel = await interaction.client.channels.fetch(MOD_CHANNEL_ID);
-        await interaction.reply({
-          content: `Current verification channel: ${channel ? channel.toString() : 'Unknown (ID: ' + MOD_CHANNEL_ID + ')'}`,
-          ephemeral: true
-        });
-      } catch (error) {
-        await interaction.reply({
-          content: `Current verification channel ID is set to: ${MOD_CHANNEL_ID}, but I couldn't fetch the channel. It may have been deleted.`,
-          ephemeral: true
-        });
-      }
-    } else {
+  } 
+  else if (subcommand === 'setrole') {
+    const role = interaction.options.getRole('role');
+    
+    if (!role) {
       await interaction.reply({
-        content: 'No verification channel has been set. Use `/modverify setchannel` to set one.',
+        content: 'Please select a valid role.',
+        ephemeral: true
+      });
+      return;
+    }
+    
+    // Save the role ID to the config file
+    try {
+      saveVerificationConfig(MOD_CHANNEL_ID || '', role.id);
+      
+      await interaction.reply({
+        content: `Age Unverified role set to ${role.toString()}. This role will be assigned to new members.`,
+        ephemeral: true
+      });
+    } catch (error) {
+      console.error("Failed to save role configuration:", error);
+      await interaction.reply({
+        content: `There was an error setting the Age Unverified role.`,
+        ephemeral: true
+      });
+    }
+  } 
+  else if (subcommand === 'status') {
+    // Update to show both channel and role configuration
+    try {
+      let statusMessage = '';
+      
+      // Check channel status
+      if (MOD_CHANNEL_ID) {
+        try {
+          const channel = await interaction.client.channels.fetch(MOD_CHANNEL_ID);
+          statusMessage += `Current verification channel: ${channel ? channel.toString() : 'Unknown (ID: ' + MOD_CHANNEL_ID + ')'}\n`;
+        } catch (error) {
+          statusMessage += `Current verification channel ID is set to: ${MOD_CHANNEL_ID}, but I couldn't fetch the channel. It may have been deleted.\n`;
+        }
+      } else {
+        statusMessage += 'No verification channel has been set. Use `/modverify setchannel` to set one.\n';
+      }
+      
+      // Check role status
+      if (AGE_UNVERIFIED_ROLE_ID) {
+        try {
+          const guild = interaction.guild;
+          if (guild) {
+            const role = guild.roles.cache.get(AGE_UNVERIFIED_ROLE_ID);
+            statusMessage += `Current Age Unverified role: ${role ? role.toString() : 'Unknown (ID: ' + AGE_UNVERIFIED_ROLE_ID + ')'}\n`;
+          } else {
+            statusMessage += `Current Age Unverified role ID is set to: ${AGE_UNVERIFIED_ROLE_ID}\n`;
+          }
+        } catch (error) {
+          statusMessage += `Current Age Unverified role ID is set to: ${AGE_UNVERIFIED_ROLE_ID}, but I couldn't fetch the role.\n`;
+        }
+      } else {
+        statusMessage += 'No Age Unverified role has been set. Use `/modverify setrole` to set one.\n';
+      }
+      
+      await interaction.reply({
+        content: statusMessage,
+        ephemeral: true
+      });
+    } catch (error) {
+      console.error("Error displaying status:", error);
+      await interaction.reply({
+        content: `There was an error retrieving the current configuration.`,
         ephemeral: true
       });
     }
@@ -810,6 +903,16 @@ async function processApproval(interaction: ButtonInteraction, member: GuildMemb
   // Add the 18+ role
   await member.roles.add(VERIFICATION_ROLE_ID);
   
+  // Remove the Age Unverified role if it exists
+  if (AGE_UNVERIFIED_ROLE_ID) {
+    try {
+      await member.roles.remove(AGE_UNVERIFIED_ROLE_ID);
+      console.log(`Removed Age Unverified role from ${member.user.tag}`);
+    } catch (error) {
+      console.error(`Failed to remove Age Unverified role from ${member.user.tag}:`, error);
+    }
+  }
+  
   // Update the embed to show approval
   const message = interaction.message;
   const embeds = message.embeds;
@@ -844,7 +947,7 @@ async function processApproval(interaction: ButtonInteraction, member: GuildMemb
   
   // Notify the moderator
   await interaction.reply({
-    content: `Verification for ${member.user.tag} has been approved. They have been given the 18+ role.`,
+    content: `Verification for ${member.user.tag} has been approved. They have been given the 18+ role and had their Age Unverified role removed.`,
     ephemeral: true
   });
 }

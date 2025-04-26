@@ -17,7 +17,8 @@ import {
   ButtonInteraction,
   Interaction,
   Events,
-  ModalSubmitInteraction
+  ModalSubmitInteraction,
+  GuildMember
 } from 'discord.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -29,7 +30,8 @@ import {
   handleVerifyCommand, 
   handleModVerifyCommand, 
   handleVerificationButton,
-  handleVerificationDecision 
+  handleVerificationDecision,
+  getAgeUnverifiedRoleId
 } from './verification';
 
 // Also import these functions from the verification module
@@ -55,6 +57,8 @@ const BOT_NAME = "The Roommates Helper";
 const SERVER_NAME = "Roommates";
 const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.CLIENT_ID!;
+// Add AGE_UNVERIFIED_ROLE_ID here (will be undefined if not set in .env)
+const AGE_UNVERIFIED_ROLE_ID = process.env.AGE_UNVERIFIED_ROLE_ID;
 
 // Create a new client instance with additional intents for verification
 const client = new Client({
@@ -104,7 +108,8 @@ function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void 
           '@everyone', 'moderator', 'verified!', 'PluralKit', 'TTS Bot', 
           'carl-bot', 'Captcha.bot', 'Zahra', 'Doughmination System',
           'You have name privileges', 'You\'ve lost name privileges', 
-          'MF BOTS ARE ASSHOLES', '18+', 'new role', 'soundboard'
+          'MF BOTS ARE ASSHOLES', '18+', 'new role', 'soundboard',
+          'Age Unverified' // Added this to skip the new role
         ];
         
         if (skipRoles.includes(name)) continue;
@@ -553,6 +558,34 @@ client.once('ready', async () => {
 client.on('error', (error) => {
   console.error('Discord client error:', error);
   writeHealthStatus('offline', startTime);
+});
+
+// Handle new members joining
+client.on('guildMemberAdd', async (member: GuildMember) => {
+  try {
+    console.log(`New member joined: ${member.user.tag}`);
+    
+    // Get the unverified role ID (either from env or config)
+    const unverifiedRoleId = getAgeUnverifiedRoleId();
+    
+    if (!unverifiedRoleId) {
+      console.warn('No Age Unverified role ID configured. Skipping role assignment for new member.');
+      return;
+    }
+    
+    // Check if the role exists
+    const role = member.guild.roles.cache.get(unverifiedRoleId);
+    if (!role) {
+      console.error(`Age Unverified role with ID ${unverifiedRoleId} not found in server.`);
+      return;
+    }
+    
+    // Assign the role
+    await member.roles.add(role);
+    console.log(`Assigned Age Unverified role to new member: ${member.user.tag}`);
+  } catch (error) {
+    console.error('Error assigning Age Unverified role to new member:', error);
+  }
 });
 
 // Handle interactions (commands, buttons, modals)
