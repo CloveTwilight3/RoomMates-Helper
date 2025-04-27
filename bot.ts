@@ -31,7 +31,8 @@ import {
   handleModVerifyCommand, 
   handleVerificationButton,
   handleVerificationDecision,
-  getAgeUnverifiedRoleId
+  getAgeUnverifiedRoleId,
+  loadVerificationConfig // Import this to ensure config is loaded
 } from './verification';
 
 // Also import these functions from the verification module
@@ -61,12 +62,13 @@ const CLIENT_ID = process.env.CLIENT_ID!;
 const AGE_UNVERIFIED_ROLE_ID = process.env.AGE_UNVERIFIED_ROLE_ID;
 
 // Create a new client instance with additional intents for verification
+// IMPORTANT: Added GuildMembers intent with higher priority and Guilds intent comes before it
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers, // Moved up to ensure it's recognized
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.DirectMessages, // Added for DM support
   ]
 });
@@ -529,7 +531,7 @@ async function removeExistingColorRoles(member: any) {
 }
 
 // When the client is ready, run this code (only once)
-client.once('ready', async () => {
+client.once(Events.ClientReady, async () => {
   console.log(`${BOT_NAME} is online and ready to serve ${SERVER_NAME}!`);
   
   // Set bot's activity status
@@ -544,6 +546,9 @@ client.once('ready', async () => {
   
   // Set up the verification system
   setupVerificationSystem(client);
+  
+  // Explicitly load verification config
+  loadVerificationConfig();
   
   // Update health status when bot is ready
   writeHealthStatus('online', startTime);
@@ -561,7 +566,8 @@ client.on('error', (error) => {
 });
 
 // Handle new members joining
-client.on('guildMemberAdd', async (member: GuildMember) => {
+// IMPORTANT: Changed from 'guildMemberAdd' to the proper Events.GuildMemberAdd
+client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
   try {
     console.log(`New member joined: ${member.user.tag}`);
     
@@ -589,7 +595,7 @@ client.on('guildMemberAdd', async (member: GuildMember) => {
 });
 
 // Handle interactions (commands, buttons, modals)
-client.on('interactionCreate', async interaction => {
+client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isChatInputCommand()) {
     handleCommandInteraction(interaction);
   } else if (interaction.isButton()) {
