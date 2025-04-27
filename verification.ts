@@ -63,8 +63,8 @@ const VERIFICATION_ROLE_ID = '1344892607255547944'; // 18+ role ID
 let AGE_UNVERIFIED_ROLE_ID = process.env.AGE_UNVERIFIED_ROLE_ID;
 const CONFIG_FILE = 'verification_config.json';
 
-// Function to load verification config
-function loadVerificationConfig() {
+// Function to load verification config - Now exported
+export function loadVerificationConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
       const configData = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) as VerificationConfig;
