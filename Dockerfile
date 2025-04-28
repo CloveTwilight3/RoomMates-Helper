@@ -15,6 +15,11 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
+# Ensure health.json and verification_config.json are files, not directories
+RUN rm -rf health.json verification_config.json || true
+RUN echo '{"lastHeartbeat": 0, "status": "starting"}' > health.json && \
+    echo '{}' > verification_config.json
+
 # Set environment variables
 ENV NODE_ENV=production
 

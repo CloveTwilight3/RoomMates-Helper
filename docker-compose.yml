@@ -5,10 +5,10 @@ services:
     build: .
     container_name: roommates-helper
     restart: unless-stopped
-    volumes:
-      - ./roommates_roles.txt:/usr/src/app/roommates_roles.txt
-      - ./verification_config.json:/usr/src/app/verification_config.json
-      - ./health.json:/usr/src/app/health.json
+#    volumes:
+ #     - ./roommates_roles.txt:/usr/src/app/roommates_roles.txt
+  #    - ./verification_config.json:/usr/src/app/verification_config.json
+   #   - ./health.json:/usr/src/app/health.json
     env_file:
       - .env
     healthcheck:
