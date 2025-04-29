@@ -1,14 +1,14 @@
-version: '3.8'
-
 services:
   roommates-helper:
     build: .
     container_name: roommates-helper
     restart: unless-stopped
-#    volumes:
- #     - ./roommates_roles.txt:/usr/src/app/roommates_roles.txt
-  #    - ./verification_config.json:/usr/src/app/verification_config.json
-   #   - ./health.json:/usr/src/app/health.json
+    volumes:
+      - ./roommates_roles.txt:/usr/src/app/roommates_roles.txt
+      - ./verification_config.json:/usr/src/app/verification_config.json:rw
+      - ./message_logger_config.json:/usr/src/app/message_logger_config.json:rw
+      - ./infractions.json:/usr/src/app/infractions.json:rw
+      - ./health.json:/usr/src/app/health.json:rw
     env_file:
       - .env
     healthcheck:
@@ -17,9 +17,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    networks:
-      - bot-network
 
 networks:
-  bot-network:
-    driver: bridge
+  default:
+    name: roommates-helper-network

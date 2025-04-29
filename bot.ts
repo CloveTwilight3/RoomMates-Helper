@@ -1,4 +1,21 @@
-// The Roommates Helper - Color Role Assignment Bot with verification system
+/**
+ * The Roommates Helper - Discord Bot
+ * ---------------------------------
+ * A utility bot for the Roommates Discord server with features including:
+ * - Color role management
+ * - Age verification system
+ * - Message logging system
+ * - Welcome DM system
+ * - Warning system with escalating punishments
+ * 
+ * @license MIT
+ * @copyright 2025 Clove Twilight
+ */
+
+//=============================================================================
+// IMPORTS
+//=============================================================================
+
 import { 
   Client, 
   GatewayIntentBits, 
@@ -23,7 +40,10 @@ import {
 import dotenv from 'dotenv';
 import fs from 'fs';
 
-// Import the verification system
+//=============================================================================
+// IMPORT VERIFICATION SYSTEM
+//=============================================================================
+
 import { 
   registerVerificationCommands, 
   setupVerificationSystem, 
@@ -32,10 +52,9 @@ import {
   handleVerificationButton,
   handleVerificationDecision,
   getAgeUnverifiedRoleId,
-  loadVerificationConfig // Import this to ensure config is loaded
+  loadVerificationConfig
 } from './verification';
 
-// Also import these functions from the verification module
 import { 
   handleVerificationContinue,
   handleVerificationCancel,
@@ -43,8 +62,48 @@ import {
   handleVerificationModal
 } from './verification';
 
-// Import health check system
+//=============================================================================
+// IMPORT MESSAGE LOGGER SYSTEM
+//=============================================================================
+
+import { 
+  registerMessageLoggerCommands, 
+  setupMessageLogger, 
+  handleLoggerCommand, 
+  loadMessageLoggerConfig,
+  testLoggerChannel
+} from './message-logger';
+
+//=============================================================================
+// IMPORT WELCOME DM SYSTEM
+//=============================================================================
+
+import {
+  setupWelcomeDM,
+  sendWelcomeDM
+} from './welcome-dm';
+
+//=============================================================================
+// IMPORT WARNING SYSTEM
+//=============================================================================
+
+import {
+  registerModCommands,
+  setupWarningSystem,
+  handleModCommand,
+  handleModButtonInteraction,
+  handleModModalSubmit
+} from './warning-system';
+
+//=============================================================================
+// IMPORT HEALTH CHECK SYSTEM
+//=============================================================================
+
 import { writeHealthStatus } from './healthcheck';
+
+//=============================================================================
+// BOT INITIALIZATION
+//=============================================================================
 
 // Track bot startup time
 const startTime = Date.now();
@@ -58,20 +117,35 @@ const BOT_NAME = "The Roommates Helper";
 const SERVER_NAME = "Roommates";
 const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.CLIENT_ID!;
-// Add AGE_UNVERIFIED_ROLE_ID here (will be undefined if not set in .env)
 const AGE_UNVERIFIED_ROLE_ID = process.env.AGE_UNVERIFIED_ROLE_ID;
 
-// Create a new client instance with additional intents for verification
-// IMPORTANT: Added GuildMembers intent with higher priority and Guilds intent comes before it
+// Create a new client instance with ALL required intents
 const client = new Client({
   intents: [
+    // Base intents
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers, // Moved up to ensure it's recognized
+    GatewayIntentBits.GuildMembers,
+    
+    // Message-related intents - REQUIRED for message logging
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages, // Added for DM support
+    GatewayIntentBits.GuildMessageReactions,
+    
+    // DM intents
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageReactions
   ]
 });
+
+// Log what events the client is listening for
+console.log("Discord.js Events supported by this client instance:");
+console.log("MessageCreate:", client.listenerCount(Events.MessageCreate));
+console.log("MessageUpdate:", client.listenerCount(Events.MessageUpdate));
+console.log("MessageDelete:", client.listenerCount(Events.MessageDelete));
+
+//=============================================================================
+// COLOR ROLE MANAGEMENT
+//=============================================================================
 
 // Role management
 interface ColorRole {
@@ -84,7 +158,9 @@ interface ColorRole {
 let colorRoles: ColorRole[] = [];
 let colorCategories: Record<string, ColorRole[]> = {};
 
-// Load color roles from the file
+/**
+ * Load color roles from the file
+ */
 function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void {
   try {
     console.log(`Loading color roles from ${filePath}...`);
@@ -136,7 +212,9 @@ function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void 
   }
 }
 
-// Categorize color roles for easier selection
+/**
+ * Categorize color roles for easier selection
+ */
 function categorizeColorRoles(): void {
   // Reset categories
   colorCategories = {};
@@ -189,7 +267,13 @@ function categorizeColorRoles(): void {
   }
 }
 
-// Register slash commands
+//=============================================================================
+// COMMAND REGISTRATION
+//=============================================================================
+
+/**
+ * Register slash commands
+ */
 async function registerCommands() {
   const commands = [
     new SlashCommandBuilder()
@@ -210,6 +294,12 @@ async function registerCommands() {
 
   // Add verification commands to the array
   registerVerificationCommands(commands);
+  
+  // Add message logger commands to the array
+  registerMessageLoggerCommands(commands);
+  
+  // Add moderation commands to the array
+  registerModCommands(commands);
 
   try {
     console.log('Started refreshing application (/) commands.');
@@ -241,7 +331,13 @@ async function registerCommands() {
   }
 }
 
-// Handle the color select subcommand
+//=============================================================================
+// COLOR ROLE COMMANDS
+//=============================================================================
+
+/**
+ * Handle the color select subcommand
+ */
 async function handleColorSelectCommand(interaction: ChatInputCommandInteraction) {
   // Check if we have any color categories
   if (Object.keys(colorCategories).length === 0) {
@@ -329,7 +425,9 @@ async function handleColorSelectCommand(interaction: ChatInputCommandInteraction
   });
 }
 
-// Show colors for a specific category
+/**
+ * Show colors for a specific category
+ */
 async function showColorsForCategory(interaction: any, category: string) {
   try {
     if (!colorCategories[category] || colorCategories[category].length === 0) {
@@ -406,7 +504,9 @@ async function showColorsForCategory(interaction: any, category: string) {
   }
 }
 
-// Assign the selected color role
+/**
+ * Assign the selected color role
+ */
 async function assignColorRole(interaction: any, roleId: string) {
   try {
     if (!interaction.guild) {
@@ -485,7 +585,9 @@ async function assignColorRole(interaction: any, roleId: string) {
   }
 }
 
-// Handle the color remove subcommand
+/**
+ * Handle the color remove subcommand
+ */
 async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction, member: any) {
   try {
     const removed = await removeExistingColorRoles(member);
@@ -510,7 +612,9 @@ async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction
   }
 }
 
-// Helper function to remove existing color roles
+/**
+ * Helper function to remove existing color roles
+ */
 async function removeExistingColorRoles(member: any) {
   // Get all color role IDs
   const colorRoleIds = new Set<string>();
@@ -530,7 +634,13 @@ async function removeExistingColorRoles(member: any) {
   return true;
 }
 
-// When the client is ready, run this code (only once)
+//=============================================================================
+// EVENT HANDLERS
+//=============================================================================
+
+/**
+ * Bot ready event handler
+ */
 client.once(Events.ClientReady, async () => {
   console.log(`${BOT_NAME} is online and ready to serve ${SERVER_NAME}!`);
   
@@ -550,6 +660,18 @@ client.once(Events.ClientReady, async () => {
   // Explicitly load verification config
   loadVerificationConfig();
   
+  // Set up the message logger
+  setupMessageLogger(client);
+  
+  // Set up the welcome DM system
+  setupWelcomeDM(client);
+  
+  // Set up the warning system
+  setupWarningSystem(client);
+  
+  // Test the message logger channel
+  await testLoggerChannel(client);
+  
   // Update health status when bot is ready
   writeHealthStatus('online', startTime);
   
@@ -559,17 +681,23 @@ client.once(Events.ClientReady, async () => {
   }, 60 * 1000); // Every minute
 });
 
-// Handle errors
+/**
+ * Error event handler
+ */
 client.on('error', (error) => {
   console.error('Discord client error:', error);
   writeHealthStatus('offline', startTime);
 });
 
-// Handle new members joining
-// IMPORTANT: Changed from 'guildMemberAdd' to the proper Events.GuildMemberAdd
+/**
+ * Member join event handler
+ */
 client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
   try {
     console.log(`New member joined: ${member.user.tag}`);
+    
+    // Send welcome DM to the new member
+    await sendWelcomeDM(member);
     
     // Get the unverified role ID (either from env or config)
     const unverifiedRoleId = getAgeUnverifiedRoleId();
@@ -590,11 +718,45 @@ client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
     await member.roles.add(role);
     console.log(`Assigned Age Unverified role to new member: ${member.user.tag}`);
   } catch (error) {
-    console.error('Error assigning Age Unverified role to new member:', error);
+    console.error('Error processing new member:', error);
   }
 });
 
-// Handle interactions (commands, buttons, modals)
+/**
+ * Message create event handler for message debugging
+ */
+client.on(Events.MessageCreate, (message) => {
+  // Ignore bot messages to prevent loops
+  if (message.author.bot) return;
+  
+  console.log(`MESSAGE RECEIVED: ID=${message.id}, Author=${message.author.tag}, Content=${message.content}`);
+});
+
+/**
+ * Message update event handler for debugging
+ */
+client.on(Events.MessageUpdate, (oldMessage, newMessage) => {
+  // Ignore bot messages to prevent loops
+  if (newMessage.author?.bot) return;
+  
+  console.log(`MESSAGE UPDATED: ID=${newMessage.id}, Author=${newMessage.author?.tag}`);
+  console.log(`Old content: ${oldMessage.content}`);
+  console.log(`New content: ${newMessage.content}`);
+});
+
+/**
+ * Message delete event handler for debugging
+ */
+client.on(Events.MessageDelete, (message) => {
+  // Ignore bot messages to prevent loops
+  if (message.author?.bot) return;
+  
+  console.log(`MESSAGE DELETED: ID=${message.id}, Author=${message.author?.tag}`);
+});
+
+/**
+ * Interaction create event handler
+ */
 client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isChatInputCommand()) {
     handleCommandInteraction(interaction);
@@ -605,7 +767,13 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-// Handle command interactions
+//=============================================================================
+// INTERACTION HANDLERS
+//=============================================================================
+
+/**
+ * Handle command interactions
+ */
 async function handleCommandInteraction(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild) {
     await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
@@ -613,6 +781,14 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
   }
 
   const { commandName } = interaction;
+
+  // Handle warning system commands
+  if (['warn', 'warnings', 'clearwarnings', 'mute', 'unmute',
+       'ban', 'unban', 'kick', 'note', 'modconfig', 'appeal',
+       'check'].includes(commandName)) {
+    await handleModCommand(interaction);
+    return;
+  }
 
   // Get the member from the interaction
   const member = interaction.guild.members.cache.get(interaction.user.id);
@@ -644,6 +820,10 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
         await handleModVerifyCommand(interaction);
         break;
         
+      case 'logger':
+        await handleLoggerCommand(interaction);
+        break;
+        
       default:
         await interaction.reply({ 
           content: 'Unknown command. Please use a valid command.', 
@@ -663,11 +843,21 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
   }
 }
 
-// Handle button interactions
+/**
+ * Handle button interactions
+ */
 async function handleButtonInteraction(interaction: ButtonInteraction) {
   const customId = interaction.customId;
   
   try {
+    // Handle warning system buttons
+    if (customId.startsWith('open_appeal_modal_') ||
+        customId.startsWith('approve_appeal_') ||
+        customId.startsWith('deny_appeal_')) {
+      await handleModButtonInteraction(interaction);
+      return;
+    }
+    
     // Handle color selection
     if (customId === 'color_category_select' || customId === 'color_select') {
       // These are handled by the collectors in handleColorSelectCommand
@@ -714,11 +904,20 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
   }
 }
 
-// Handle modal interactions
+/**
+ * Handle modal interactions
+ */
 async function handleModalInteraction(interaction: ModalSubmitInteraction) {
   const customId = interaction.customId;
   
   try {
+    // Handle warning system modals
+    if (customId.startsWith('appeal_modal_') ||
+        customId.startsWith('appeal_decision_')) {
+      await handleModModalSubmit(interaction);
+      return;
+    }
+    
     // Handle verification modals
     if (customId.startsWith('verification_modal_')) {
       await handleVerificationModal(interaction);
@@ -742,6 +941,10 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     }
   }
 }
+
+//=============================================================================
+// BOT LOGIN
+//=============================================================================
 
 // Login to Discord with your app's token
 client.login(TOKEN);
