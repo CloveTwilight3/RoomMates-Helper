@@ -7,6 +7,7 @@
  * - Message logging system
  * - Welcome DM system
  * - Warning system with escalating punishments
+ * - NSFW access toggle system
  * 
  * @license MIT
  * @copyright 2025 Clove Twilight
@@ -119,6 +120,10 @@ const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.CLIENT_ID!;
 const AGE_UNVERIFIED_ROLE_ID = process.env.AGE_UNVERIFIED_ROLE_ID;
 
+// NSFW Role configuration
+const NSFW_ACCESS_ROLE_ID = process.env.NSFW_ACCESS_ROLE_ID;
+const NSFW_NO_ACCESS_ROLE_ID = process.env.NSFW_NO_ACCESS_ROLE_ID;
+
 // Create a new client instance with ALL required intents
 const client = new Client({
   intents: [
@@ -187,7 +192,7 @@ function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void 
           'carl-bot', 'Captcha.bot', 'Zahra', 'Doughmination System',
           'You have name privileges', 'You\'ve lost name privileges', 
           'MF BOTS ARE ASSHOLES', '18+', 'new role', 'soundboard',
-          'Age Unverified' // Added this to skip the new role
+          'Age Unverified', 'NSFW Access', 'NSFW No Access' // Added NSFW roles to skip list
         ];
         
         if (skipRoles.includes(name)) continue;
@@ -268,6 +273,103 @@ function categorizeColorRoles(): void {
 }
 
 //=============================================================================
+// NSFW ACCESS MANAGEMENT
+//=============================================================================
+
+/**
+ * Handle the NSFW toggle command
+ */
+async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
+  if (!interaction.guild) {
+    await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+    return;
+  }
+
+  // Check if NSFW roles are configured
+  if (!NSFW_ACCESS_ROLE_ID || !NSFW_NO_ACCESS_ROLE_ID) {
+    await interaction.reply({
+      content: 'NSFW roles are not properly configured. Please contact an administrator.',
+      ephemeral: true
+    });
+    return;
+  }
+
+  const member = interaction.guild.members.cache.get(interaction.user.id);
+  if (!member) {
+    await interaction.reply({ content: 'Could not find you in this server!', ephemeral: true });
+    return;
+  }
+
+  const nsfwValue = interaction.options.getBoolean('value', true);
+  
+  try {
+    // Get the roles
+    const nsfwAccessRole = interaction.guild.roles.cache.get(NSFW_ACCESS_ROLE_ID);
+    const nsfwNoAccessRole = interaction.guild.roles.cache.get(NSFW_NO_ACCESS_ROLE_ID);
+    
+    if (!nsfwAccessRole || !nsfwNoAccessRole) {
+      await interaction.reply({
+        content: 'NSFW roles not found in this server. Please contact an administrator.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    if (nsfwValue) {
+      // User wants NSFW access
+      // Remove "NSFW No Access" role and add "NSFW Access" role
+      if (member.roles.cache.has(NSFW_NO_ACCESS_ROLE_ID)) {
+        await member.roles.remove(nsfwNoAccessRole);
+      }
+      
+      if (!member.roles.cache.has(NSFW_ACCESS_ROLE_ID)) {
+        await member.roles.add(nsfwAccessRole);
+      }
+      
+      // Create success embed
+      const embed = new EmbedBuilder()
+        .setTitle('NSFW Access Enabled')
+        .setDescription('You now have access to NSFW content.')
+        .setColor(0x00FF00) // Green
+        .setTimestamp();
+      
+      await interaction.reply({
+        embeds: [embed],
+        ephemeral: true
+      });
+    } else {
+      // User wants to disable NSFW access
+      // Remove "NSFW Access" role and add "NSFW No Access" role
+      if (member.roles.cache.has(NSFW_ACCESS_ROLE_ID)) {
+        await member.roles.remove(nsfwAccessRole);
+      }
+      
+      if (!member.roles.cache.has(NSFW_NO_ACCESS_ROLE_ID)) {
+        await member.roles.add(nsfwNoAccessRole);
+      }
+      
+      // Create success embed
+      const embed = new EmbedBuilder()
+        .setTitle('NSFW Access Disabled')
+        .setDescription('You no longer have access to NSFW content.')
+        .setColor(0xFF9900) // Orange
+        .setTimestamp();
+      
+      await interaction.reply({
+        embeds: [embed],
+        ephemeral: true
+      });
+    }
+  } catch (error) {
+    console.error('Error handling NSFW toggle:', error);
+    await interaction.reply({
+      content: 'There was an error updating your NSFW access. Please try again later.',
+      ephemeral: true
+    });
+  }
+}
+
+//=============================================================================
 // COMMAND REGISTRATION
 //=============================================================================
 
@@ -288,6 +390,17 @@ async function registerCommands() {
         subcommand
           .setName('remove')
           .setDescription('Remove your current color role')
+      )
+      .toJSON(),
+    
+    new SlashCommandBuilder()
+      .setName('nsfw')
+      .setDescription('Toggle your NSFW content access')
+      .addBooleanOption(option =>
+        option
+          .setName('value')
+          .setDescription('Enable (true) or disable (false) NSFW access')
+          .setRequired(true)
       )
       .toJSON()
   ];
@@ -702,21 +815,38 @@ client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
     // Get the unverified role ID (either from env or config)
     const unverifiedRoleId = getAgeUnverifiedRoleId();
     
-    if (!unverifiedRoleId) {
-      console.warn('No Age Unverified role ID configured. Skipping role assignment for new member.');
-      return;
+    // Array to store roles to assign
+    const rolesToAssign: string[] = [];
+    
+    // Add Age Unverified role if configured
+    if (unverifiedRoleId) {
+      const ageUnverifiedRole = member.guild.roles.cache.get(unverifiedRoleId);
+      if (ageUnverifiedRole) {
+        rolesToAssign.push(unverifiedRoleId);
+      } else {
+        console.error(`Age Unverified role with ID ${unverifiedRoleId} not found in server.`);
+      }
+    } else {
+      console.warn('No Age Unverified role ID configured. Skipping age unverified role assignment for new member.');
     }
     
-    // Check if the role exists
-    const role = member.guild.roles.cache.get(unverifiedRoleId);
-    if (!role) {
-      console.error(`Age Unverified role with ID ${unverifiedRoleId} not found in server.`);
-      return;
+    // Add NSFW No Access role if configured
+    if (NSFW_NO_ACCESS_ROLE_ID) {
+      const nsfwNoAccessRole = member.guild.roles.cache.get(NSFW_NO_ACCESS_ROLE_ID);
+      if (nsfwNoAccessRole) {
+        rolesToAssign.push(NSFW_NO_ACCESS_ROLE_ID);
+      } else {
+        console.error(`NSFW No Access role with ID ${NSFW_NO_ACCESS_ROLE_ID} not found in server.`);
+      }
+    } else {
+      console.warn('No NSFW No Access role ID configured. Skipping NSFW no access role assignment for new member.');
     }
     
-    // Assign the role
-    await member.roles.add(role);
-    console.log(`Assigned Age Unverified role to new member: ${member.user.tag}`);
+    // Assign all roles at once if any are configured
+    if (rolesToAssign.length > 0) {
+      await member.roles.add(rolesToAssign);
+      console.log(`Assigned ${rolesToAssign.length} role(s) to new member: ${member.user.tag}`);
+    }
   } catch (error) {
     console.error('Error processing new member:', error);
   }
@@ -810,6 +940,10 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
             await handleColorRemoveCommand(interaction, member);
             break;
         }
+        break;
+      
+      case 'nsfw':
+        await handleNSFWCommand(interaction);
         break;
       
       case 'verify':
