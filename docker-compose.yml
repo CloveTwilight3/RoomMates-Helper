@@ -17,6 +17,30 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    # Enable better logging for the log forwarder
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "logging.enabled=true"
+      - "logging.discord=true"
+
+  # Optional: Log forwarder as a separate service
+  log-forwarder:
+    build: .
+    container_name: roommates-log-forwarder
+    restart: unless-stopped
+    command: ["node", "dist/docker-log-forwarder.js"]
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - roommates-helper
+    profiles:
+      - logging  # Only start when specifically requested
 
 networks:
   default:
