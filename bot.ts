@@ -445,6 +445,101 @@ async function registerCommands() {
 }
 
 //=============================================================================
+// COMMAND ID LOGGING
+//=============================================================================
+
+/**
+ * Fetch and log all registered command IDs in mention format
+ */
+async function logCommandIds(client: Client) {
+  try {
+    console.log('\n=== FETCHING COMMAND IDs ===');
+    
+    const GUILD_ID = process.env.GUILD_ID;
+    let commands;
+    
+    if (GUILD_ID) {
+      // Fetch guild-specific commands
+      const guild = await client.guilds.fetch(GUILD_ID);
+      commands = await guild.commands.fetch();
+      console.log(`\nGuild Commands (${guild.name}):`);
+    } else {
+      // Fetch global commands
+      commands = await client.application?.commands.fetch();
+      console.log('\nGlobal Commands:');
+    }
+    
+    if (!commands || commands.size === 0) {
+      console.log('❌ No commands found!');
+      console.log('Make sure your commands are registered and the bot has the correct permissions.');
+      return;
+    }
+    
+    console.log(`✅ Found ${commands.size} commands\n`);
+    
+    // Sort commands alphabetically by name
+    const sortedCommands = Array.from(commands.values()).sort((a, b) => a.name.localeCompare(b.name));
+    
+    console.log('📋 COMMAND MENTIONS (Copy these to use in Discord):');
+    console.log('═'.repeat(60));
+    
+    sortedCommands.forEach(command => {
+      // Handle commands with subcommands
+      if (command.options && command.options.length > 0) {
+        const subcommands = command.options.filter(option => option.type === 1); // SUB_COMMAND type
+        if (subcommands.length > 0) {
+          console.log(`\n🔸 ${command.name.toUpperCase()} (has subcommands):`);
+          subcommands.forEach(sub => {
+            console.log(`   </${command.name} ${sub.name}:${command.id}>`);
+          });
+        } else {
+          console.log(`</${command.name}:${command.id}>`);
+        }
+      } else {
+        console.log(`</${command.name}:${command.id}>`);
+      }
+    });
+    
+    console.log('\n' + '═'.repeat(60));
+    console.log('📊 RAW COMMAND DATA:');
+    console.log('═'.repeat(60));
+    
+    sortedCommands.forEach(command => {
+      console.log(`${command.name.padEnd(20)} | ${command.id}`);
+    });
+    
+    console.log('\n' + '═'.repeat(60));
+    console.log('✨ COMMAND SUMMARY:');
+    console.log('═'.repeat(60));
+    
+    // Group commands by type for summary
+    const commandTypes = {
+      'Color Management': ['color'],
+      'Verification': ['verify', 'modverify'],
+      'Moderation': ['warn', 'warnings', 'clearwarnings', 'mute', 'unmute', 'ban', 'unban', 'kick', 'note', 'modconfig', 'check', 'echo'],
+      'Appeals': ['appeal'],
+      'Logging': ['logger'],
+      'NSFW': ['nsfw']
+    };
+    
+    Object.entries(commandTypes).forEach(([category, cmdNames]) => {
+      const categoryCommands = sortedCommands.filter(cmd => cmdNames.includes(cmd.name));
+      if (categoryCommands.length > 0) {
+        console.log(`\n🏷️  ${category}:`);
+        categoryCommands.forEach(cmd => {
+          console.log(`   • ${cmd.name}`);
+        });
+      }
+    });
+    
+    console.log('\n=== COMMAND ID FETCH COMPLETE ===\n');
+    
+  } catch (error) {
+    console.error('❌ Error fetching command IDs:', error);
+  }
+}
+
+//=============================================================================
 // COLOR ROLE COMMANDS
 //=============================================================================
 
@@ -792,6 +887,12 @@ client.once(Events.ClientReady, async () => {
   setInterval(() => {
     writeHealthStatus('online', startTime);
   }, 60 * 1000); // Every minute
+  
+  // Log command IDs after everything is set up
+  console.log('🔄 Preparing to fetch command IDs...');
+  setTimeout(async () => {
+    await logCommandIds(client);
+  }, 3000); // Wait 3 seconds to ensure commands are fully registered
 });
 
 /**
