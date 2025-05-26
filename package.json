@@ -7,13 +7,21 @@
     "build": "tsc",
     "start": "node dist/bot.js",
     "dev": "ts-node bot.ts",
-    "fetch-roles": "ts-node fetch-server-roles.ts"
+    "fetch-roles": "ts-node fetch-server-roles.ts",
+    "log-forwarder": "ts-node docker-log-forwarder.ts",
+    "log-forwarder:build": "npm run build && node dist/docker-log-forwarder.js",
+    "start:with-logging": "./start-with-logging.sh",
+    "stop:all": "./stop-all.sh",
+    "logs:bot": "docker logs -f roommates-helper",
+    "logs:forwarder": "tail -f log-forwarder.log",
+    "setup": "./setup.sh"
   },
   "keywords": [
     "discord",
     "bot",
     "typescript",
-    "docker"
+    "docker",
+    "logging"
   ],
   "author": "CloveTwilight3",
   "license": "MIT",
