@@ -785,6 +785,26 @@ export function registerModCommands(commandsArray: any[]): void {
     )
     .toJSON();
     
+  // Echo command
+  const echoCommand = new SlashCommandBuilder()
+    .setName('echo')
+    .setDescription('Make the bot send a message')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
+    .addStringOption(option => 
+      option
+        .setName('message')
+        .setDescription('The message to send')
+        .setRequired(true)
+        .setMaxLength(2000)
+    )
+    .addChannelOption(option =>
+      option
+        .setName('channel')
+        .setDescription('The channel to send the message to (defaults to current channel)')
+        .setRequired(false)
+    )
+    .toJSON();
+    
   // Add all commands to the array
   commandsArray.push(
     warnCommand,
@@ -798,7 +818,8 @@ export function registerModCommands(commandsArray: any[]): void {
     noteCommand,
     modConfigCommand,
     appealCommand,
-    checkCommand
+    checkCommand,
+    echoCommand
   );
 }
 
@@ -961,6 +982,10 @@ export async function handleModCommand(interaction: ChatInputCommandInteraction)
         await handleCheckCommand(interaction);
         break;
       
+      case 'echo':
+        await handleEchoCommand(interaction);
+        break;
+      
       default:
         await interaction.reply({
           content: 'Unknown command.',
@@ -977,6 +1002,116 @@ export async function handleModCommand(interaction: ChatInputCommandInteraction)
         ephemeral: true
       }).catch(() => {});
     }
+  }
+}
+
+/**
+ * Handle the echo command
+ * @param interaction Command interaction
+ */
+async function handleEchoCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  if (!interaction.guild) return;
+  
+  const guildId = interaction.guild.id;
+  const config = getGuildConfig(guildId);
+  
+  // Get command options
+  const message = interaction.options.getString('message');
+  const targetChannel = interaction.options.getChannel('channel');
+  
+  if (!message) {
+    await interaction.reply({
+      content: 'Please provide a message to send.',
+      ephemeral: true
+    });
+    return;
+  }
+  
+  // Determine which channel to send to
+  let channelToSendTo = interaction.channel;
+  
+  if (targetChannel) {
+    // Validate that the target channel is a text channel
+    if (targetChannel.type !== 0) { // 0 is GUILD_TEXT
+      await interaction.reply({
+        content: 'Please select a valid text channel.',
+        ephemeral: true
+      });
+      return;
+    }
+    
+    // Check if the bot has permission to send messages in the target channel
+    const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
+    if (!botMember) {
+      await interaction.reply({
+        content: 'Could not verify bot permissions.',
+        ephemeral: true
+      });
+      return;
+    }
+    
+    const permissions = targetChannel.permissionsFor(botMember);
+    if (!permissions || !permissions.has(PermissionFlagsBits.SendMessages)) {
+      await interaction.reply({
+        content: `I don't have permission to send messages in ${targetChannel.toString()}.`,
+        ephemeral: true
+      });
+      return;
+    }
+    
+    channelToSendTo = targetChannel;
+  }
+  
+  if (!channelToSendTo || !('send' in channelToSendTo)) {
+    await interaction.reply({
+      content: 'Could not determine a valid channel to send the message to.',
+      ephemeral: true
+    });
+    return;
+  }
+  
+  try {
+    // Send the message
+    await (channelToSendTo as TextChannel).send(message);
+    
+    // Log the echo command usage
+    if (config.logChannelId) {
+      try {
+        const logChannel = await interaction.guild.channels.fetch(config.logChannelId);
+        if (logChannel && 'send' in logChannel) {
+          const logEmbed = new EmbedBuilder()
+            .setTitle('Echo Command Used')
+            .setColor(0x5865F2)
+            .setDescription(`**Moderator:** ${interaction.user.toString()} (${interaction.user.tag})`)
+            .addFields(
+              { name: 'Channel', value: channelToSendTo.toString() },
+              { name: 'Message', value: message.length > 1000 ? message.substring(0, 1000) + '...' : message }
+            )
+            .setTimestamp();
+          
+          await (logChannel as TextChannel).send({ embeds: [logEmbed] });
+        }
+      } catch (logError) {
+        console.error('Error logging echo command:', logError);
+      }
+    }
+    
+    // Confirm to the moderator
+    const confirmMessage = targetChannel 
+      ? `Message sent to ${targetChannel.toString()}.`
+      : 'Message sent to this channel.';
+    
+    await interaction.reply({
+      content: confirmMessage,
+      ephemeral: true
+    });
+    
+  } catch (error) {
+    console.error('Error sending echo message:', error);
+    await interaction.reply({
+      content: 'There was an error sending the message. Please check my permissions.',
+      ephemeral: true
+    });
   }
 }
 
