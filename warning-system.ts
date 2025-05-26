@@ -1017,7 +1017,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
   
   // Get command options
   const message = interaction.options.getString('message');
-  const targetChannel = interaction.options.getChannel('channel');
+  const targetChannelOption = interaction.options.getChannel('channel');
   
   if (!message) {
     await interaction.reply({
@@ -1028,11 +1028,11 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
   }
   
   // Determine which channel to send to
-  let channelToSendTo = interaction.channel;
+  let channelToSendTo: TextChannel;
   
-  if (targetChannel) {
+  if (targetChannelOption) {
     // Validate that the target channel is a text channel
-    if (targetChannel.type !== 0) { // 0 is GUILD_TEXT
+    if (targetChannelOption.type !== 0) { // 0 is GUILD_TEXT
       await interaction.reply({
         content: 'Please select a valid text channel.',
         ephemeral: true
@@ -1040,45 +1040,66 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
       return;
     }
     
-    // Check if the bot has permission to send messages in the target channel
-    const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
-    if (!botMember) {
+    try {
+      // Fetch the actual channel object from the guild
+      const fetchedChannel = await interaction.guild.channels.fetch(targetChannelOption.id);
+      if (!fetchedChannel || !fetchedChannel.isTextBased()) {
+        await interaction.reply({
+          content: 'Could not access the specified channel or it is not a text channel.',
+          ephemeral: true
+        });
+        return;
+      }
+      
+      // Check if the bot has permission to send messages in the target channel
+      const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
+      if (!botMember) {
+        await interaction.reply({
+          content: 'Could not verify bot permissions.',
+          ephemeral: true
+        });
+        return;
+      }
+      
+      const permissions = fetchedChannel.permissionsFor(botMember);
+      if (!permissions || !permissions.has(PermissionFlagsBits.SendMessages)) {
+        await interaction.reply({
+          content: `I don't have permission to send messages in ${fetchedChannel.toString()}.`,
+          ephemeral: true
+        });
+        return;
+      }
+      
+      channelToSendTo = fetchedChannel as TextChannel;
+    } catch (error) {
+      console.error('Error fetching target channel:', error);
       await interaction.reply({
-        content: 'Could not verify bot permissions.',
+        content: 'Could not access the specified channel.',
         ephemeral: true
       });
       return;
     }
-    
-    const permissions = targetChannel.permissionsFor(botMember);
-    if (!permissions || !permissions.has(PermissionFlagsBits.SendMessages)) {
+  } else {
+    // Use current channel
+    if (!interaction.channel || !interaction.channel.isTextBased()) {
       await interaction.reply({
-        content: `I don't have permission to send messages in ${targetChannel.toString()}.`,
+        content: 'Could not determine a valid channel to send the message to.',
         ephemeral: true
       });
       return;
     }
-    
-    channelToSendTo = targetChannel;
-  }
-  
-  if (!channelToSendTo || !('send' in channelToSendTo)) {
-    await interaction.reply({
-      content: 'Could not determine a valid channel to send the message to.',
-      ephemeral: true
-    });
-    return;
+    channelToSendTo = interaction.channel as TextChannel;
   }
   
   try {
     // Send the message
-    await (channelToSendTo as TextChannel).send(message);
+    await channelToSendTo.send(message);
     
     // Log the echo command usage
     if (config.logChannelId) {
       try {
         const logChannel = await interaction.guild.channels.fetch(config.logChannelId);
-        if (logChannel && 'send' in logChannel) {
+        if (logChannel && logChannel.isTextBased()) {
           const logEmbed = new EmbedBuilder()
             .setTitle('Echo Command Used')
             .setColor(0x5865F2)
@@ -1097,8 +1118,8 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
     }
     
     // Confirm to the moderator
-    const confirmMessage = targetChannel 
-      ? `Message sent to ${targetChannel.toString()}.`
+    const confirmMessage = targetChannelOption 
+      ? `Message sent to ${channelToSendTo.toString()}.`
       : 'Message sent to this channel.';
     
     await interaction.reply({
