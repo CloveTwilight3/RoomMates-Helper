@@ -134,38 +134,77 @@ const client = new Client({
 });
 
 //=============================================================================
-// ENHANCED LOGGING SETUP
+// SAFE LOGGING SETUP (NO LOOPS!)
 //=============================================================================
 
-// Override console methods to include Discord logging
+// Store original console methods
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 
+// Flag to prevent recursive logging
+let isLoggingToDiscord = false;
+
+// Safe Discord logging function
+function safeDiscordLog(level: 'info' | 'warn' | 'error', message: string, source: string = 'Bot') {
+  if (isLoggingToDiscord) return; // Prevent recursion
+  
+  isLoggingToDiscord = true;
+  try {
+    switch (level) {
+      case 'info':
+        discordLogger.info(message, source);
+        break;
+      case 'warn':
+        discordLogger.warn(message, source);
+        break;
+      case 'error':
+        discordLogger.error(message, source);
+        break;
+    }
+  } catch (error) {
+    // Use original console to avoid loops
+    originalConsoleError('Error in Discord logging:', error);
+  } finally {
+    isLoggingToDiscord = false;
+  }
+}
+
+// Override console methods (safer version)
 console.log = (...args: any[]) => {
   const message = args.join(' ');
   originalConsoleLog(...args);
   
-  // Send to Discord if it looks important
-  if (message.toLowerCase().includes('ready') || 
+  // Only send important messages to Discord
+  if (!isLoggingToDiscord && (
+      message.toLowerCase().includes('✅') ||
+      message.toLowerCase().includes('🚀') ||
+      message.toLowerCase().includes('ready') || 
       message.toLowerCase().includes('online') ||
       message.toLowerCase().includes('started') ||
       message.toLowerCase().includes('loaded') ||
-      message.toLowerCase().includes('success')) {
-    discordLogger.info(message, 'Bot');
+      message.toLowerCase().includes('success')
+  )) {
+    safeDiscordLog('info', message, 'Bot');
   }
 };
 
 console.error = (...args: any[]) => {
   const message = args.join(' ');
   originalConsoleError(...args);
-  discordLogger.error(message, 'Bot');
+  
+  if (!isLoggingToDiscord) {
+    safeDiscordLog('error', message, 'Bot');
+  }
 };
 
 console.warn = (...args: any[]) => {
   const message = args.join(' ');
   originalConsoleWarn(...args);
-  discordLogger.warn(message, 'Bot');
+  
+  if (!isLoggingToDiscord) {
+    safeDiscordLog('warn', message, 'Bot');
+  }
 };
 
 // Log what events the client is listening for
@@ -194,7 +233,7 @@ let colorCategories: Record<string, ColorRole[]> = {};
  */
 function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void {
   try {
-    discordLogger.info(`Loading color roles from ${filePath}...`, 'ColorRoles');
+    console.log(`🔄 Loading color roles from ${filePath}...`);
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split('\n');
     
@@ -232,13 +271,14 @@ function loadColorRolesFromFile(filePath: string = 'roommates_roles.txt'): void 
       }
     }
     
-    discordLogger.success(`Loaded ${colorRoles.length} color roles`, 'ColorRoles');
+    console.log(`✅ Loaded ${colorRoles.length} color roles successfully`);
     
     // Categorize color roles
     categorizeColorRoles();
     
   } catch (error) {
-    discordLogger.error(`Error loading color roles from ${filePath}`, 'ColorRoles', error);
+    console.error(`❌ Error loading color roles from ${filePath}:`, error);
+    safeDiscordLog('error', `Error loading color roles: ${error}`, 'ColorRoles');
     writeHealthStatus('offline', startTime);
   }
 }
@@ -293,10 +333,10 @@ function categorizeColorRoles(): void {
   
   // Log categories
   const categoryInfo = Object.entries(colorCategories)
-    .map(([category, roles]) => `${category}: ${roles.length} roles`)
+    .map(([category, roles]) => `${category}: ${roles.length}`)
     .join(', ');
   
-  discordLogger.info(`Color categories created: ${categoryInfo}`, 'ColorRoles');
+  console.log(`✅ Color categories created: ${categoryInfo}`);
 }
 
 //=============================================================================
@@ -352,7 +392,7 @@ async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
         await member.roles.add(nsfwAccessRole);
       }
       
-      discordLogger.info(`User ${interaction.user.tag} enabled NSFW access`, 'NSFW');
+      safeDiscordLog('info', `User ${interaction.user.tag} enabled NSFW access`, 'NSFW');
       
       const embed = new EmbedBuilder()
         .setTitle('NSFW Access Enabled')
@@ -374,7 +414,7 @@ async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
         await member.roles.add(nsfwNoAccessRole);
       }
       
-      discordLogger.info(`User ${interaction.user.tag} disabled NSFW access`, 'NSFW');
+      safeDiscordLog('info', `User ${interaction.user.tag} disabled NSFW access`, 'NSFW');
       
       const embed = new EmbedBuilder()
         .setTitle('NSFW Access Disabled')
@@ -388,7 +428,7 @@ async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
       });
     }
   } catch (error) {
-    discordLogger.error(`Error handling NSFW toggle for ${interaction.user.tag}`, 'NSFW', error);
+    console.error(`❌ Error handling NSFW toggle for ${interaction.user.tag}:`, error);
     await interaction.reply({
       content: 'There was an error updating your NSFW access. Please try again later.',
       ephemeral: true
@@ -442,7 +482,7 @@ async function registerCommands() {
   registerModCommands(commands);
 
   try {
-    discordLogger.info('Started refreshing application (/) commands', 'Commands');
+    console.log('🔄 Started refreshing application (/) commands');
     const rest = new REST({ version: '10' }).setToken(TOKEN);
     
     // Check if we have a specific guild ID for development
@@ -450,23 +490,23 @@ async function registerCommands() {
     
     if (GUILD_ID) {
       // Guild commands update instantly
-      discordLogger.info(`Registering commands to guild: ${GUILD_ID}`, 'Commands');
+      console.log(`🔄 Registering commands to guild: ${GUILD_ID}`);
       await rest.put(
         Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
         { body: commands },
       );
-      discordLogger.success(`Successfully registered ${commands.length} commands to guild`, 'Commands');
+      console.log(`✅ Successfully registered ${commands.length} commands to guild`);
     } else {
       // Global commands can take up to an hour to propagate
-      discordLogger.info('Registering global commands (this can take up to an hour to propagate)', 'Commands');
+      console.log('🔄 Registering global commands (this can take up to an hour to propagate)');
       await rest.put(
         Routes.applicationCommands(CLIENT_ID),
         { body: commands },
       );
-      discordLogger.success(`Successfully registered ${commands.length} global commands`, 'Commands');
+      console.log(`✅ Successfully registered ${commands.length} global commands`);
     }
   } catch (error) {
-    discordLogger.error('Error registering commands', 'Commands', error);
+    console.error('❌ Error registering commands:', error);
     writeHealthStatus('offline', startTime);
   }
 }
@@ -480,7 +520,7 @@ async function registerCommands() {
  */
 async function logCommandIds(client: Client) {
   try {
-    discordLogger.info('Fetching command IDs...', 'Commands');
+    console.log('🔄 Fetching command IDs...');
     
     const GUILD_ID = process.env.GUILD_ID;
     let commands;
@@ -496,12 +536,11 @@ async function logCommandIds(client: Client) {
     
     if (!commands || commands.size === 0) {
       console.log('❌ No commands found!');
-      discordLogger.warn('No commands found during ID fetch', 'Commands');
+      safeDiscordLog('warn', 'No commands found during ID fetch', 'Commands');
       return;
     }
     
     console.log(`✅ Found ${commands.size} commands\n`);
-    discordLogger.success(`Found ${commands.size} registered commands`, 'Commands');
     
     // Sort commands alphabetically by name
     const sortedCommands = Array.from(commands.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -548,17 +587,13 @@ async function logCommandIds(client: Client) {
     });
     rawData += '```';
     
-    // Send to Discord
-    discordLogger.success('Command IDs fetched successfully', 'Commands', {
-      mentions: commandMentions.length > 1800 ? commandMentions.substring(0, 1800) + '...' : commandMentions,
-      rawData: rawData.length > 1800 ? rawData.substring(0, 1800) + '...' : rawData
-    });
+    // Send to Discord safely
+    safeDiscordLog('info', `Command IDs fetched successfully - ${commands.size} commands found`, 'Commands');
     
     console.log('\n=== COMMAND ID FETCH COMPLETE ===\n');
     
   } catch (error) {
     console.error('❌ Error fetching command IDs:', error);
-    discordLogger.error('Failed to fetch command IDs', 'Commands', error);
   }
 }
 
@@ -781,7 +816,7 @@ async function assignColorRole(interaction: any, roleId: string) {
       await member.roles.add(role);
       
       // Log the color change
-      discordLogger.info(`User ${interaction.user.tag} changed color to ${role.name}`, 'ColorRoles');
+      safeDiscordLog('info', `User ${interaction.user.tag} changed color to ${role.name}`, 'ColorRoles');
       
       // Create an embed to show the result
       const embed = new EmbedBuilder()
@@ -803,7 +838,6 @@ async function assignColorRole(interaction: any, roleId: string) {
       });
     } catch (error) {
       console.error('Error assigning color role:', error);
-      discordLogger.error(`Failed to assign color role ${role.name} to ${interaction.user.tag}`, 'ColorRoles', error);
       
       // Try to update the interaction with an error message
       try {
@@ -828,7 +862,7 @@ async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction
     const removed = await removeExistingColorRoles(member);
     
     if (removed) {
-      discordLogger.info(`User ${interaction.user.tag} removed their color role`, 'ColorRoles');
+      safeDiscordLog('info', `User ${interaction.user.tag} removed their color role`, 'ColorRoles');
       await interaction.reply({ 
         content: 'Your color role has been removed!', 
         ephemeral: true 
@@ -841,7 +875,6 @@ async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction
     }
   } catch (error) {
     console.error('Error removing color roles:', error);
-    discordLogger.error(`Failed to remove color role for ${interaction.user.tag}`, 'ColorRoles', error);
     await interaction.reply({ 
       content: 'There was an error removing your color roles. Please try again later.', 
       ephemeral: true 
@@ -882,7 +915,7 @@ client.once(Events.ClientReady, async () => {
   // Initialize Discord logger first
   discordLogger.initialize(client);
   
-  console.log(`${BOT_NAME} is online and ready to serve ${SERVER_NAME}!`);
+  console.log(`🚀 ${BOT_NAME} is online and ready to serve ${SERVER_NAME}!`);
   
   // Set bot's activity status
   client.user?.setPresence({
@@ -916,15 +949,16 @@ client.once(Events.ClientReady, async () => {
   }, 3000); // Wait 3 seconds to ensure commands are fully registered
   
   // Send startup notification to Discord
-  await discordLogger.sendStartupMessage();
+  setTimeout(async () => {
+    await discordLogger.sendStartupMessage();
+  }, 5000); // Wait 5 seconds for everything to be ready
 });
 
 /**
  * Error event handler
  */
 client.on('error', (error) => {
-  console.error('Discord client error:', error);
-  discordLogger.error('Discord client error', 'Bot', error);
+  console.error('❌ Discord client error:', error);
   writeHealthStatus('offline', startTime);
 });
 
@@ -933,7 +967,7 @@ client.on('error', (error) => {
  */
 client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
   try {
-    discordLogger.info(`New member joined: ${member.user.tag}`, 'MemberJoin');
+    console.log(`✅ New member joined: ${member.user.tag}`);
     
     // Send welcome DM to the new member
     await sendWelcomeDM(member);
@@ -971,11 +1005,10 @@ client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
     // Assign all roles at once if any are configured
     if (rolesToAssign.length > 0) {
       await member.roles.add(rolesToAssign);
-      discordLogger.success(`Assigned ${rolesToAssign.length} role(s) to new member: ${member.user.tag}`, 'MemberJoin');
+      console.log(`✅ Assigned ${rolesToAssign.length} role(s) to new member: ${member.user.tag}`);
     }
   } catch (error) {
-    console.error('Error processing new member:', error);
-    discordLogger.error(`Error processing new member ${member.user.tag}`, 'MemberJoin', error);
+    console.error('❌ Error processing new member:', error);
   }
 });
 
@@ -986,7 +1019,10 @@ client.on(Events.MessageCreate, (message) => {
   // Ignore bot messages to prevent loops
   if (message.author.bot) return;
   
-  console.log(`MESSAGE RECEIVED: ID=${message.id}, Author=${message.author.tag}, Content=${message.content}`);
+  // Only log in debug mode or for specific conditions
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`MESSAGE RECEIVED: ID=${message.id}, Author=${message.author.tag}, Content=${message.content}`);
+  }
 });
 
 /**
@@ -996,9 +1032,12 @@ client.on(Events.MessageUpdate, (oldMessage, newMessage) => {
   // Ignore bot messages to prevent loops
   if (newMessage.author?.bot) return;
   
-  console.log(`MESSAGE UPDATED: ID=${newMessage.id}, Author=${newMessage.author?.tag}`);
-  console.log(`Old content: ${oldMessage.content}`);
-  console.log(`New content: ${newMessage.content}`);
+  // Only log in debug mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`MESSAGE UPDATED: ID=${newMessage.id}, Author=${newMessage.author?.tag}`);
+    console.log(`Old content: ${oldMessage.content}`);
+    console.log(`New content: ${newMessage.content}`);
+  }
 });
 
 /**
@@ -1008,7 +1047,10 @@ client.on(Events.MessageDelete, (message) => {
   // Ignore bot messages to prevent loops
   if (message.author?.bot) return;
   
-  console.log(`MESSAGE DELETED: ID=${message.id}, Author=${message.author?.tag}`);
+  // Only log in debug mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`MESSAGE DELETED: ID=${message.id}, Author=${message.author?.tag}`);
+  }
 });
 
 /**
@@ -1039,8 +1081,8 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
 
   const { commandName } = interaction;
 
-  // Log command usage
-  discordLogger.debug(`Command used: /${commandName} by ${interaction.user.tag}`, 'Commands');
+  // Log command usage (but not to Discord to avoid spam)
+  console.log(`🔍 Command used: /${commandName} by ${interaction.user.tag}`);
 
   // Handle warning system commands
   if (['warn', 'warnings', 'clearwarnings', 'mute', 'unmute',
@@ -1095,8 +1137,7 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
         });
     }
   } catch (error) {
-    console.error(`Error handling command ${commandName}:`, error);
-    discordLogger.error(`Error handling command /${commandName} for ${interaction.user.tag}`, 'Commands', error);
+    console.error(`❌ Error handling command ${commandName}:`, error);
     
     // Only reply if the interaction hasn't been responded to yet
     if (!interaction.replied && !interaction.deferred) {
@@ -1157,8 +1198,7 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       });
     }
   } catch (error) {
-    console.error(`Error handling button interaction ${customId}:`, error);
-    discordLogger.error(`Error handling button interaction ${customId} for ${interaction.user.tag}`, 'Interactions', error);
+    console.error(`❌ Error handling button interaction ${customId}:`, error);
     
     // Only reply if the interaction hasn't been responded to yet
     if (!interaction.replied && !interaction.deferred) {
@@ -1196,8 +1236,7 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
       });
     }
   } catch (error) {
-    console.error(`Error handling modal interaction ${customId}:`, error);
-    discordLogger.error(`Error handling modal interaction ${customId} for ${interaction.user.tag}`, 'Interactions', error);
+    console.error(`❌ Error handling modal interaction ${customId}:`, error);
     
     // Only reply if the interaction hasn't been responded to yet
     if (!interaction.replied && !interaction.deferred) {
@@ -1216,27 +1255,35 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n🛑 Received SIGINT, shutting down gracefully...');
-  await discordLogger.sendShutdownMessage();
+  try {
+    await discordLogger.sendShutdownMessage();
+  } catch (error) {
+    originalConsoleError('Error sending shutdown message:', error);
+  }
   client.destroy();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
-  await discordLogger.sendShutdownMessage();
+  try {
+    await discordLogger.sendShutdownMessage();
+  } catch (error) {
+    originalConsoleError('Error sending shutdown message:', error);
+  }
   client.destroy();
   process.exit(0);
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
-  discordLogger.error(`Uncaught Exception: ${error.message}`, 'Process', error);
+  originalConsoleError('❌ Uncaught Exception:', error);
+  safeDiscordLog('error', `Uncaught Exception: ${error.message}`, 'Process');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  discordLogger.error(`Unhandled Rejection: ${reason}`, 'Process');
+  originalConsoleError('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  safeDiscordLog('error', `Unhandled Rejection: ${reason}`, 'Process');
 });
 
 //=============================================================================
