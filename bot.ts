@@ -93,7 +93,7 @@ import {
   setupWarningSystem,
   handleModCommand,
   handleModButtonInteraction,
-  handleModModalSubmit
+  handleModModalSubmit,
 } from './warning-system';
 
 //=============================================================================
@@ -915,7 +915,7 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
   // Handle warning system commands
   if (['warn', 'warnings', 'clearwarnings', 'mute', 'unmute',
        'ban', 'unban', 'kick', 'note', 'modconfig', 'appeal',
-       'check'].includes(commandName)) {
+       'check', 'echo'].includes(commandName)) {
     await handleModCommand(interaction);
     return;
   }
