@@ -39,7 +39,8 @@ import {
   ModalSubmitInteraction,
   TextInputBuilder,
   TextInputStyle,
-  DMChannel
+  DMChannel,
+  MessageFlags
 } from 'discord.js';
 import fs from 'fs';
 
@@ -911,7 +912,7 @@ export async function handleModCommand(interaction: ChatInputCommandInteraction)
     if (!interaction.guildId) {
       await interaction.reply({
         content: 'This command can only be used in a server.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -930,7 +931,7 @@ export async function handleModCommand(interaction: ChatInputCommandInteraction)
   if (!config.enabled && interaction.commandName !== 'appeal') {
     await interaction.reply({
       content: 'The moderation system is not enabled in this server. An administrator can enable it with `/modconfig enable`.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -989,7 +990,7 @@ export async function handleModCommand(interaction: ChatInputCommandInteraction)
       default:
         await interaction.reply({
           content: 'Unknown command.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
     }
   } catch (error) {
@@ -999,7 +1000,7 @@ export async function handleModCommand(interaction: ChatInputCommandInteraction)
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content: 'An error occurred while processing this command. Please try again later.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       }).catch(() => {});
     }
   }
@@ -1022,7 +1023,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
   if (!message) {
     await interaction.reply({
       content: 'Please provide a message to send.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1035,7 +1036,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
     if (targetChannelOption.type !== 0) { // 0 is GUILD_TEXT
       await interaction.reply({
         content: 'Please select a valid text channel.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -1046,7 +1047,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
       if (!fetchedChannel || !fetchedChannel.isTextBased()) {
         await interaction.reply({
           content: 'Could not access the specified channel or it is not a text channel.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -1056,7 +1057,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
       if (!botMember) {
         await interaction.reply({
           content: 'Could not verify bot permissions.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -1065,7 +1066,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
       if (!permissions || !permissions.has(PermissionFlagsBits.SendMessages)) {
         await interaction.reply({
           content: `I don't have permission to send messages in ${fetchedChannel.toString()}.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -1075,7 +1076,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
       console.error('Error fetching target channel:', error);
       await interaction.reply({
         content: 'Could not access the specified channel.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -1084,7 +1085,7 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
     if (!interaction.channel || !interaction.channel.isTextBased()) {
       await interaction.reply({
         content: 'Could not determine a valid channel to send the message to.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -1124,14 +1125,14 @@ async function handleEchoCommand(interaction: ChatInputCommandInteraction): Prom
     
     await interaction.reply({
       content: confirmMessage,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     
   } catch (error) {
     console.error('Error sending echo message:', error);
     await interaction.reply({
       content: 'There was an error sending the message. Please check my permissions.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -1225,7 +1226,7 @@ async function showModConfigStatus(interaction: ChatInputCommandInteraction, gui
   
   await interaction.reply({
     embeds: [embed],
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1239,7 +1240,7 @@ async function enableModSystem(interaction: ChatInputCommandInteraction, guildId
   
   await interaction.reply({
     content: 'The moderation system has been enabled.',
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1253,7 +1254,7 @@ async function disableModSystem(interaction: ChatInputCommandInteraction, guildI
   
   await interaction.reply({
     content: 'The moderation system has been disabled.',
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1267,7 +1268,7 @@ async function setMutedRole(interaction: ChatInputCommandInteraction, guildId: s
   if (!role) {
     await interaction.reply({
       content: 'Please provide a valid role.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1276,7 +1277,7 @@ async function setMutedRole(interaction: ChatInputCommandInteraction, guildId: s
   
   await interaction.reply({
     content: `The muted role has been set to ${role.toString()}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1290,7 +1291,7 @@ async function setModRole(interaction: ChatInputCommandInteraction, guildId: str
   if (!role) {
     await interaction.reply({
       content: 'Please provide a valid role.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1299,7 +1300,7 @@ async function setModRole(interaction: ChatInputCommandInteraction, guildId: str
   
   await interaction.reply({
     content: `The moderator role has been set to ${role.toString()}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1313,7 +1314,7 @@ async function setLogChannel(interaction: ChatInputCommandInteraction, guildId: 
   if (!channel || channel.type !== 0) { // 0 is GUILD_TEXT
     await interaction.reply({
       content: 'Please provide a valid text channel.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1322,7 +1323,7 @@ async function setLogChannel(interaction: ChatInputCommandInteraction, guildId: 
   
   await interaction.reply({
     content: `The log channel has been set to ${channel.toString()}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1336,7 +1337,7 @@ async function setAppealChannel(interaction: ChatInputCommandInteraction, guildI
   if (!channel || channel.type !== 0) { // 0 is GUILD_TEXT
     await interaction.reply({
       content: 'Please provide a valid text channel.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1345,7 +1346,7 @@ async function setAppealChannel(interaction: ChatInputCommandInteraction, guildI
   
   await interaction.reply({
     content: `The appeal channel has been set to ${channel.toString()}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1359,7 +1360,7 @@ async function setDmNotifications(interaction: ChatInputCommandInteraction, guil
   if (enabled === null) {
     await interaction.reply({
       content: 'Please specify whether DM notifications should be enabled.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1368,7 +1369,7 @@ async function setDmNotifications(interaction: ChatInputCommandInteraction, guil
   
   await interaction.reply({
     content: `DM notifications have been ${enabled ? 'enabled' : 'disabled'}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1382,7 +1383,7 @@ async function setWarnThreshold(interaction: ChatInputCommandInteraction, guildI
   if (!count || count < 1) {
     await interaction.reply({
       content: 'Please provide a valid threshold (must be at least 1).',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1391,7 +1392,7 @@ async function setWarnThreshold(interaction: ChatInputCommandInteraction, guildI
   
   await interaction.reply({
     content: `The warning threshold has been set to ${count}. Users will receive a punishment after ${count} warnings.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1405,7 +1406,7 @@ async function setAppealsEnabled(interaction: ChatInputCommandInteraction, guild
   if (enabled === null) {
     await interaction.reply({
       content: 'Please specify whether appeals should be allowed.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1414,7 +1415,7 @@ async function setAppealsEnabled(interaction: ChatInputCommandInteraction, guild
   
   await interaction.reply({
     content: `Appeals have been ${enabled ? 'enabled' : 'disabled'}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1436,7 +1437,7 @@ async function handleWarnCommand(interaction: ChatInputCommandInteraction): Prom
   if (!user || !reason) {
     await interaction.reply({
       content: 'Please provide a user and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1445,7 +1446,7 @@ async function handleWarnCommand(interaction: ChatInputCommandInteraction): Prom
   if (user.bot) {
     await interaction.reply({
       content: 'You cannot warn a bot.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1454,7 +1455,7 @@ async function handleWarnCommand(interaction: ChatInputCommandInteraction): Prom
   if (user.id === interaction.user.id) {
     await interaction.reply({
       content: 'You cannot warn yourself.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1466,7 +1467,7 @@ async function handleWarnCommand(interaction: ChatInputCommandInteraction): Prom
       if (targetMember && targetMember.roles.cache.has(config.moderatorRoleId)) {
         await interaction.reply({
           content: 'You cannot warn a moderator.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -1717,7 +1718,7 @@ async function handleWarningsCommand(interaction: ChatInputCommandInteraction): 
   if (!user) {
     await interaction.reply({
       content: 'Please provide a user.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1728,7 +1729,7 @@ async function handleWarningsCommand(interaction: ChatInputCommandInteraction): 
   if (warnings.length === 0) {
     await interaction.reply({
       content: `${user.toString()} has no warnings.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1764,7 +1765,7 @@ async function handleWarningsCommand(interaction: ChatInputCommandInteraction): 
   
   await interaction.reply({
     embeds: [embed],
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -1784,7 +1785,7 @@ async function handleClearWarningsCommand(interaction: ChatInputCommandInteracti
   if (!user || !reason) {
     await interaction.reply({
       content: 'Please provide a user and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1795,7 +1796,7 @@ async function handleClearWarningsCommand(interaction: ChatInputCommandInteracti
   if (activeWarnings.length === 0) {
     await interaction.reply({
       content: `${user.toString()} has no active warnings to clear.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1826,7 +1827,7 @@ async function handleClearWarningsCommand(interaction: ChatInputCommandInteracti
   
   await interaction.reply({
     content: `Cleared ${clearedCount} warning(s) for ${user.toString()}.`,
-    ephemeral: false
+    flags: MessageFlags.Ephemeral
   });
   
   // Notify the user if DM notifications are enabled
@@ -1865,7 +1866,7 @@ async function handleMuteCommand(interaction: ChatInputCommandInteraction): Prom
   if (!config.mutedRoleId) {
     await interaction.reply({
       content: 'No muted role has been configured. An administrator can set one with `/modconfig mutedrole`.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1878,7 +1879,7 @@ async function handleMuteCommand(interaction: ChatInputCommandInteraction): Prom
   if (!user || !durationStr || !reason) {
     await interaction.reply({
       content: 'Please provide a user, duration, and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1887,7 +1888,7 @@ async function handleMuteCommand(interaction: ChatInputCommandInteraction): Prom
   if (user.bot) {
     await interaction.reply({
       content: 'You cannot mute a bot.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1896,7 +1897,7 @@ async function handleMuteCommand(interaction: ChatInputCommandInteraction): Prom
   if (user.id === interaction.user.id) {
     await interaction.reply({
       content: 'You cannot mute yourself.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -1908,7 +1909,7 @@ async function handleMuteCommand(interaction: ChatInputCommandInteraction): Prom
       if (targetMember && targetMember.roles.cache.has(config.moderatorRoleId)) {
         await interaction.reply({
           content: 'You cannot mute a moderator.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -1923,7 +1924,7 @@ async function handleMuteCommand(interaction: ChatInputCommandInteraction): Prom
   if (duration <= 0) {
     await interaction.reply({
       content: 'Invalid duration. Please use a format like 1h, 30m, or 1d.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2090,7 +2091,7 @@ async function handleUnmuteCommand(interaction: ChatInputCommandInteraction): Pr
   if (!config.mutedRoleId) {
     await interaction.reply({
       content: 'No muted role has been configured. An administrator can set one with `/modconfig mutedrole`.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2102,7 +2103,7 @@ async function handleUnmuteCommand(interaction: ChatInputCommandInteraction): Pr
   if (!user || !reason) {
     await interaction.reply({
       content: 'Please provide a user and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2252,7 +2253,7 @@ async function handleBanCommand(interaction: ChatInputCommandInteraction): Promi
   if (!user || !reason) {
     await interaction.reply({
       content: 'Please provide a user and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2261,7 +2262,7 @@ async function handleBanCommand(interaction: ChatInputCommandInteraction): Promi
   if (user.bot) {
     await interaction.reply({
       content: 'You cannot ban a bot using this command. Use the regular Discord ban instead.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2270,7 +2271,7 @@ async function handleBanCommand(interaction: ChatInputCommandInteraction): Promi
   if (user.id === interaction.user.id) {
     await interaction.reply({
       content: 'You cannot ban yourself.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2283,7 +2284,7 @@ async function handleBanCommand(interaction: ChatInputCommandInteraction): Promi
       if (targetMember && targetMember.roles.cache.has(config.moderatorRoleId)) {
         await interaction.reply({
           content: 'You cannot ban a moderator.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -2417,7 +2418,7 @@ async function handleUnbanCommand(interaction: ChatInputCommandInteraction): Pro
   if (!userId || !reason) {
     await interaction.reply({
       content: 'Please provide a user ID and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2537,7 +2538,7 @@ async function handleKickCommand(interaction: ChatInputCommandInteraction): Prom
   if (!user || !reason) {
     await interaction.reply({
       content: 'Please provide a user and reason.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2546,7 +2547,7 @@ async function handleKickCommand(interaction: ChatInputCommandInteraction): Prom
   if (user.bot) {
     await interaction.reply({
       content: 'You cannot kick a bot using this command. Use the regular Discord kick instead.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2555,7 +2556,7 @@ async function handleKickCommand(interaction: ChatInputCommandInteraction): Prom
   if (user.id === interaction.user.id) {
     await interaction.reply({
       content: 'You cannot kick yourself.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2568,7 +2569,7 @@ async function handleKickCommand(interaction: ChatInputCommandInteraction): Prom
       if (targetMember && targetMember.roles.cache.has(config.moderatorRoleId)) {
         await interaction.reply({
           content: 'You cannot kick a moderator.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -2577,7 +2578,7 @@ async function handleKickCommand(interaction: ChatInputCommandInteraction): Prom
       console.log(`Could not fetch member ${user.id}: ${error}`);
       await interaction.reply({
         content: 'That user is not in the server.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -2693,7 +2694,7 @@ async function handleNoteCommand(interaction: ChatInputCommandInteraction): Prom
   if (!user || !content) {
     await interaction.reply({
       content: 'Please provide a user and note content.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2732,7 +2733,7 @@ async function handleAppealCommand(interaction: ChatInputCommandInteraction): Pr
     if (!interaction.guildId) {
       await interaction.reply({
         content: 'Please specify the type of punishment you are appealing.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -2745,7 +2746,7 @@ async function handleAppealCommand(interaction: ChatInputCommandInteraction): Pr
   if (!config.allowAppeals) {
     await interaction.reply({
       content: 'Appeals are not allowed in this server.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2761,7 +2762,7 @@ async function handleAppealCommand(interaction: ChatInputCommandInteraction): Pr
   if (userInfractions.length === 0) {
     await interaction.reply({
       content: `You don't have any active ${type.toLowerCase()}s to appeal.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2773,7 +2774,7 @@ async function handleAppealCommand(interaction: ChatInputCommandInteraction): Pr
   if (userAppeals.length > 0) {
     await interaction.reply({
       content: 'You already have a pending appeal. Please wait for that to be reviewed before submitting another.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2782,7 +2783,7 @@ async function handleAppealCommand(interaction: ChatInputCommandInteraction): Pr
   try {
     await interaction.reply({
       content: 'I\'ve sent you a DM with the appeal form.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     
     // Create and send the appeal form
@@ -2794,12 +2795,12 @@ async function handleAppealCommand(interaction: ChatInputCommandInteraction): Pr
     if (interaction.replied) {
       await interaction.followUp({
         content: 'There was an error starting the appeal process. Do you have DMs enabled?',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     } else {
       await interaction.reply({
         content: 'There was an error starting the appeal process. Do you have DMs enabled?',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   }
@@ -2921,7 +2922,7 @@ export async function handleOpenAppealModal(interaction: ButtonInteraction): Pro
   if (!context) {
     await interaction.reply({
       content: 'This appeal form has expired. Please start the process again with the `/appeal` command.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2931,7 +2932,7 @@ export async function handleOpenAppealModal(interaction: ButtonInteraction): Pro
   if (!infraction) {
     await interaction.reply({
       content: 'The infraction being appealed could not be found. Please contact a server administrator.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -2993,7 +2994,7 @@ export async function handleAppealModalSubmit(interaction: ModalSubmitInteractio
   if (!infraction) {
     await interaction.reply({
       content: 'The infraction being appealed could not be found. Please contact a server administrator.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3024,7 +3025,7 @@ export async function handleAppealModalSubmit(interaction: ModalSubmitInteractio
   // Send confirmation to the user
   await interaction.reply({
     content: 'Your appeal has been submitted. You will be notified when it has been reviewed.',
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
   
   // Forward the appeal to the appeal channel
@@ -3133,7 +3134,7 @@ export async function handleAppealDecision(interaction: ButtonInteraction): Prom
   if (!member || !('permissions' in member) || !(member.permissions as any).has(PermissionFlagsBits.ModerateMembers)) {
     await interaction.reply({
       content: 'You do not have permission to handle appeals.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3147,7 +3148,7 @@ export async function handleAppealDecision(interaction: ButtonInteraction): Prom
   if (!infraction) {
     await interaction.reply({
       content: 'The infraction being appealed could not be found.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3157,7 +3158,7 @@ export async function handleAppealDecision(interaction: ButtonInteraction): Prom
   if (!appeal) {
     await interaction.reply({
       content: 'The appeal could not be found.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3166,7 +3167,7 @@ export async function handleAppealDecision(interaction: ButtonInteraction): Prom
   if (appeal.status !== AppealStatus.PENDING) {
     await interaction.reply({
       content: 'This appeal has already been handled.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3213,7 +3214,7 @@ export async function handleAppealDecisionSubmit(interaction: ModalSubmitInterac
   if (!infraction) {
     await interaction.reply({
       content: 'The infraction being appealed could not be found.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3223,7 +3224,7 @@ export async function handleAppealDecisionSubmit(interaction: ModalSubmitInterac
   if (!appeal) {
     await interaction.reply({
       content: 'The appeal could not be found.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3289,7 +3290,7 @@ export async function handleAppealDecisionSubmit(interaction: ModalSubmitInterac
       console.error('Appeal message not found.');
       await interaction.reply({
         content: 'The appeal has been ' + (decision === 'approve' ? 'approved' : 'denied') + ', but I couldn\'t update the original message.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -3321,7 +3322,7 @@ export async function handleAppealDecisionSubmit(interaction: ModalSubmitInterac
     // Use reply instead of update for modal submissions
     await interaction.reply({
       content: `Appeal ${decision === 'approve' ? 'approved' : 'denied'} successfully.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     
     // Try to edit the original message if possible
@@ -3334,7 +3335,7 @@ export async function handleAppealDecisionSubmit(interaction: ModalSubmitInterac
     if (!interaction.replied) {
       await interaction.reply({
         content: `Appeal ${decision === 'approve' ? 'approved' : 'denied'} successfully, but there was an error updating the message.`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   }
@@ -3376,7 +3377,7 @@ async function handleCheckCommand(interaction: ChatInputCommandInteraction): Pro
   if (!user) {
     await interaction.reply({
       content: 'Please provide a user.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3387,7 +3388,7 @@ async function handleCheckCommand(interaction: ChatInputCommandInteraction): Pro
   if (infractions.length === 0) {
     await interaction.reply({
       content: `${user.toString()} has no moderation history.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -3454,7 +3455,7 @@ async function handleCheckCommand(interaction: ChatInputCommandInteraction): Pro
   
   await interaction.reply({
     embeds: [embed],
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
