@@ -37,7 +37,8 @@ import {
   Interaction,
   Events,
   ModalSubmitInteraction,
-  GuildMember
+  GuildMember,
+  MessageFlags
 } from 'discord.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -348,7 +349,7 @@ function categorizeColorRoles(): void {
  */
 async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild) {
-    await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+    await interaction.reply({ content: 'This command can only be used in a server!', flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -356,7 +357,7 @@ async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
   if (!NSFW_ACCESS_ROLE_ID || !NSFW_NO_ACCESS_ROLE_ID) {
     await interaction.reply({
       content: 'NSFW roles are not properly configured. Please contact an administrator.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -377,7 +378,7 @@ async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
     if (!nsfwAccessRole || !nsfwNoAccessRole) {
       await interaction.reply({
         content: 'NSFW roles not found in this server. Please contact an administrator.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -424,14 +425,14 @@ async function handleNSFWCommand(interaction: ChatInputCommandInteraction) {
       
       await interaction.reply({
         embeds: [embed],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   } catch (error) {
     console.error(`❌ Error handling NSFW toggle for ${interaction.user.tag}:`, error);
     await interaction.reply({
       content: 'There was an error updating your NSFW access. Please try again later.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -609,7 +610,7 @@ async function handleColorSelectCommand(interaction: ChatInputCommandInteraction
   if (Object.keys(colorCategories).length === 0) {
     await interaction.reply({
       content: 'No color roles found. Please contact a server administrator.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -636,7 +637,7 @@ async function handleColorSelectCommand(interaction: ChatInputCommandInteraction
   const message = await interaction.reply({
     content: 'Select a color category:',
     components: [row],
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
     fetchReply: true // Make sure to fetch the reply for the collector
   });
 
@@ -865,19 +866,19 @@ async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction
       safeDiscordLog('info', `User ${interaction.user.tag} removed their color role`, 'ColorRoles');
       await interaction.reply({ 
         content: 'Your color role has been removed!', 
-        ephemeral: true 
+        ephemeral: flags: MessageFlags.Ephemeral
       });
     } else {
       await interaction.reply({ 
         content: 'You don\'t have any color roles to remove.', 
-        ephemeral: true 
+        flags: MessageFlags.Ephemeral 
       });
     }
   } catch (error) {
     console.error('Error removing color roles:', error);
     await interaction.reply({ 
       content: 'There was an error removing your color roles. Please try again later.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 }
@@ -1075,7 +1076,7 @@ client.on(Events.InteractionCreate, async interaction => {
  */
 async function handleCommandInteraction(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild) {
-    await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+    await interaction.reply({ content: 'This command can only be used in a server!', flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -1095,7 +1096,7 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
   // Get the member from the interaction
   const member = interaction.guild.members.cache.get(interaction.user.id);
   if (!member) {
-    await interaction.reply({ content: 'Could not find you in this server!', ephemeral: true });
+    await interaction.reply({ content: 'Could not find you in this server!', flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -1133,7 +1134,7 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
       default:
         await interaction.reply({ 
           content: 'Unknown command. Please use a valid command.', 
-          ephemeral: true 
+          flags: MessageFlags.Ephemeral
         });
     }
   } catch (error) {
@@ -1232,7 +1233,7 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
       // Unknown modal
       await interaction.reply({ 
         content: 'This modal submission is not recognized.', 
-        ephemeral: true 
+        flags: MessageFlags.Ephemeral 
       });
     }
   } catch (error) {
@@ -1242,7 +1243,7 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({ 
         content: 'There was an error processing this submission. Please try again later.', 
-        ephemeral: true 
+        flags: MessageFlags.Ephemeral 
       }).catch((err) => console.error('Error sending error message:', err));
     }
   }
