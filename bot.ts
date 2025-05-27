@@ -866,7 +866,7 @@ async function handleColorRemoveCommand(interaction: ChatInputCommandInteraction
       safeDiscordLog('info', `User ${interaction.user.tag} removed their color role`, 'ColorRoles');
       await interaction.reply({ 
         content: 'Your color role has been removed!', 
-        ephemeral: flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral
       });
     } else {
       await interaction.reply({ 
