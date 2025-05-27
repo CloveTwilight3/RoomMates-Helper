@@ -31,7 +31,8 @@ import {
   GuildChannel,
   GuildMember,
   User,
-  PartialGuildMember
+  PartialGuildMember,
+  MessageFlags
 } from 'discord.js';
 import fs from 'fs';
 
@@ -561,7 +562,7 @@ async function handleSetChannelCommand(interaction: CommandInteraction): Promise
   if (!selectedChannel) {
     await interaction.reply({
       content: 'Please select a valid channel.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -572,7 +573,7 @@ async function handleSetChannelCommand(interaction: CommandInteraction): Promise
   if (!selectedChannel || ![0, 5, 10, 11, 12, 15].includes(selectedChannel.type as number)) {
     await interaction.reply({
       content: 'Please select a text channel. Voice channels and categories cannot be used for logging.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -587,7 +588,7 @@ async function handleSetChannelCommand(interaction: CommandInteraction): Promise
       console.log("Channel not found");
       await interaction.reply({
         content: 'I cannot access that channel.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -613,13 +614,13 @@ async function handleSetChannelCommand(interaction: CommandInteraction): Promise
     
     await interaction.reply({
       content: `Message log channel set to <#${selectedChannel.id}>`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   } catch (error) {
     console.error("Failed to send test message to channel:", error);
     await interaction.reply({
       content: `I don't have permission to send messages in <#${selectedChannel.id}>. Please check my permissions.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -632,7 +633,7 @@ async function handleEnableCommand(interaction: CommandInteraction): Promise<voi
   if (!loggerConfig.logChannelId) {
     await interaction.reply({
       content: 'No log channel has been set. Please use `/logger setchannel` first.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -642,7 +643,7 @@ async function handleEnableCommand(interaction: CommandInteraction): Promise<voi
   
   await interaction.reply({
     content: `Message logging has been enabled. Logs will be sent to <#${loggerConfig.logChannelId}>.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -656,7 +657,7 @@ async function handleDisableCommand(interaction: CommandInteraction): Promise<vo
   
   await interaction.reply({
     content: 'Message logging has been disabled.',
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -704,7 +705,7 @@ async function handleToggleCommand(interaction: CommandInteraction): Promise<voi
   
   await interaction.reply({
     content: `${featureName} has been ${toggledValue ? 'enabled' : 'disabled'}.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -743,7 +744,7 @@ async function handleStatusCommand(interaction: CommandInteraction): Promise<voi
   
   await interaction.reply({
     content: statusMessage,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -760,7 +761,7 @@ async function handleIgnoreCommand(interaction: CommandInteraction): Promise<voi
   if (!id.match(/^\d+$/)) {
     await interaction.reply({
       content: 'Please provide a valid ID (numbers only).',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -773,14 +774,14 @@ async function handleIgnoreCommand(interaction: CommandInteraction): Promise<voi
         if (!channel) {
           await interaction.reply({
             content: 'That channel does not exist or I cannot access it.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
       } catch (error) {
         await interaction.reply({
           content: 'That channel does not exist or I cannot access it.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -792,12 +793,12 @@ async function handleIgnoreCommand(interaction: CommandInteraction): Promise<voi
         
         await interaction.reply({
           content: `Channel <#${id}> has been added to the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       } else {
         await interaction.reply({
           content: `Channel <#${id}> is already in the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
     } else if (type === 'user') {
@@ -807,14 +808,14 @@ async function handleIgnoreCommand(interaction: CommandInteraction): Promise<voi
         if (!user) {
           await interaction.reply({
             content: 'That user does not exist or I cannot access them.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
       } catch (error) {
         await interaction.reply({
           content: 'That user does not exist or I cannot access them.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -826,12 +827,12 @@ async function handleIgnoreCommand(interaction: CommandInteraction): Promise<voi
         
         await interaction.reply({
           content: `User <@${id}> has been added to the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       } else {
         await interaction.reply({
           content: `User <@${id}> is already in the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
     }
@@ -839,7 +840,7 @@ async function handleIgnoreCommand(interaction: CommandInteraction): Promise<voi
     console.error("Error handling ignore command:", error);
     await interaction.reply({
       content: 'There was an error processing your request.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -857,7 +858,7 @@ async function handleUnignoreCommand(interaction: CommandInteraction): Promise<v
   if (!id.match(/^\d+$/)) {
     await interaction.reply({
       content: 'Please provide a valid ID (numbers only).',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -872,12 +873,12 @@ async function handleUnignoreCommand(interaction: CommandInteraction): Promise<v
         
         await interaction.reply({
           content: `Channel <#${id}> has been removed from the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       } else {
         await interaction.reply({
           content: `Channel <#${id}> is not in the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
     } else if (type === 'user') {
@@ -889,12 +890,12 @@ async function handleUnignoreCommand(interaction: CommandInteraction): Promise<v
         
         await interaction.reply({
           content: `User <@${id}> has been removed from the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       } else {
         await interaction.reply({
           content: `User <@${id}> is not in the ignore list.`,
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
     }
@@ -902,7 +903,7 @@ async function handleUnignoreCommand(interaction: CommandInteraction): Promise<v
     console.error("Error handling unignore command:", error);
     await interaction.reply({
       content: 'There was an error processing your request.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
