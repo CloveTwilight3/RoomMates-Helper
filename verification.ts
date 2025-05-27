@@ -28,7 +28,8 @@ import {
   ModalSubmitInteraction,
   MessagePayload,
   MessageCreateOptions,
-  InteractionResponse
+  InteractionResponse,
+  MessageFlags
 } from 'discord.js';
 import fs from 'fs';
 
@@ -271,7 +272,7 @@ async function notifyVerificationExpired(client: Client, userId: string) {
  */
 export async function handleVerifyCommand(interaction: CommandInteraction) {
   if (!interaction.guild) {
-    await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+    await interaction.reply({ content: 'This command can only be used in a server!', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -303,7 +304,7 @@ export async function handleVerifyCommand(interaction: CommandInteraction) {
     console.error("Error creating verification prompt:", error);
     await interaction.reply({ 
       content: 'There was an error setting up the verification process. Please try again later.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral 
     });
   }
 }
@@ -322,7 +323,7 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
     if (!channel || channel.type !== ChannelType.GuildText) {
       await interaction.reply({
         content: 'Please select a valid text channel.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -344,13 +345,13 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
       
       await interaction.reply({
         content: `Verification review channel set to ${channel.toString()}`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     } catch (error) {
       console.error("Failed to send test message to channel:", error);
       await interaction.reply({
         content: `I don't have permission to send messages in ${channel.toString()}. Please check my permissions.`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   } 
@@ -360,7 +361,7 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
     if (!role) {
       await interaction.reply({
         content: 'Please select a valid role.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -371,13 +372,13 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
       
       await interaction.reply({
         content: `Age Unverified role set to ${role.toString()}. This role will be assigned to new members.`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     } catch (error) {
       console.error("Failed to save role configuration:", error);
       await interaction.reply({
         content: `There was an error setting the Age Unverified role.`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   } 
@@ -417,13 +418,13 @@ export async function handleModVerifyCommand(interaction: CommandInteraction) {
       
       await interaction.reply({
         content: statusMessage,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     } catch (error) {
       console.error("Error displaying status:", error);
       await interaction.reply({
         content: `There was an error retrieving the current configuration.`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   }
@@ -436,7 +437,7 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
   if (!interaction.guild) {
     await interaction.reply({ 
       content: 'This button can only be used in a server!', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
     return;
   }
@@ -456,13 +457,13 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
           
           await interaction.reply({
             content: 'You already have a verification in progress. Please check your DMs for instructions.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         } catch (err) {
           console.error("Error sending upload options:", err);
           await interaction.reply({
             content: 'There was an issue with your existing verification. Starting a new one...',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           
           // Delete old verification and continue
@@ -471,7 +472,7 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
       } else {
         await interaction.reply({
           content: 'You already have a verification in progress. Please check your DMs.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -529,7 +530,7 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
       // Reply to the interaction
       await interaction.reply({
         content: 'I\'ve sent you a DM with instructions for verification. Please check your direct messages.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     } catch (dmError) {
       // User likely has DMs closed
@@ -538,14 +539,14 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
       
       await interaction.reply({
         content: 'I couldn\'t send you a DM. Please enable direct messages from server members and try again.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   } catch (error) {
     console.error("Error starting verification:", error);
     await interaction.reply({
       content: 'Sorry, there was an error starting the verification process. Please try again later.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -556,7 +557,7 @@ export async function handleVerificationButton(interaction: ButtonInteraction) {
 export async function handleVerificationContinue(interaction: ButtonInteraction) {
   // Verify that this is a DM channel
   if (interaction.channel?.type !== ChannelType.DM) {
-    await interaction.reply({ content: 'This button can only be used in DMs.', ephemeral: true });
+    await interaction.reply({ content: 'This button can only be used in DMs.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -564,13 +565,13 @@ export async function handleVerificationContinue(interaction: ButtonInteraction)
   const userId = customId.split('_').pop();
   
   if (!userId || userId !== interaction.user.id) {
-    await interaction.reply({ content: 'This button is not for you.', ephemeral: true });
+    await interaction.reply({ content: 'This button is not for you.', flags: MessageFlags.Ephemeral });
     return;
   }
   
   const verification = pendingVerifications.get(userId);
   if (!verification || verification.step !== 'awaiting_upload') {
-    await interaction.reply({ content: 'Your verification session has expired or is not in the correct state.', ephemeral: true });
+    await interaction.reply({ content: 'Your verification session has expired or is not in the correct state.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -587,7 +588,7 @@ export async function handleVerificationContinue(interaction: ButtonInteraction)
     console.error("Error sending upload options:", error);
     await interaction.reply({
       content: 'There was an error processing your request. Please try again later.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -598,7 +599,7 @@ export async function handleVerificationContinue(interaction: ButtonInteraction)
 export async function handleVerificationCancel(interaction: ButtonInteraction) {
   // Verify that this is a DM channel
   if (interaction.channel?.type !== ChannelType.DM) {
-    await interaction.reply({ content: 'This button can only be used in DMs.', ephemeral: true });
+    await interaction.reply({ content: 'This button can only be used in DMs.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -606,7 +607,7 @@ export async function handleVerificationCancel(interaction: ButtonInteraction) {
   const userId = customId.split('_').pop();
   
   if (!userId || userId !== interaction.user.id) {
-    await interaction.reply({ content: 'This button is not for you.', ephemeral: true });
+    await interaction.reply({ content: 'This button is not for you.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -664,7 +665,7 @@ async function sendVerificationUploadOptions(dmChannel: DMChannel, userId: strin
 export async function handleVerificationUpload(interaction: ButtonInteraction) {
   // Verify that this is a DM channel
   if (interaction.channel?.type !== ChannelType.DM) {
-    await interaction.reply({ content: 'This button can only be used in DMs.', ephemeral: true });
+    await interaction.reply({ content: 'This button can only be used in DMs.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -672,13 +673,13 @@ export async function handleVerificationUpload(interaction: ButtonInteraction) {
   const userId = customId.split('_').pop();
   
   if (!userId || userId !== interaction.user.id) {
-    await interaction.reply({ content: 'This button is not for you.', ephemeral: true });
+    await interaction.reply({ content: 'This button is not for you.', flags: MessageFlags.Ephemeral });
     return;
   }
   
   const verification = pendingVerifications.get(userId);
   if (!verification || verification.step !== 'awaiting_upload') {
-    await interaction.reply({ content: 'Your verification session has expired or is not in the correct state.', ephemeral: true });
+    await interaction.reply({ content: 'Your verification session has expired or is not in the correct state.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -710,7 +711,7 @@ export async function handleVerificationUpload(interaction: ButtonInteraction) {
     console.error("Error showing modal:", error);
     await interaction.reply({
       content: 'There was an error processing your request. Please upload your ID photo directly as a message instead.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -721,7 +722,7 @@ export async function handleVerificationUpload(interaction: ButtonInteraction) {
 export async function handleVerificationModal(interaction: ModalSubmitInteraction) {
   await interaction.reply({
     content: 'Please upload your ID photo directly as a message in this conversation.',
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -795,13 +796,13 @@ async function forwardVerificationToMods(client: Client, message: Message, attac
  */
 export async function handleVerificationDecision(interaction: ButtonInteraction) {
   if (!interaction.guild) {
-    await interaction.reply({ content: 'This button can only be used in a server!', ephemeral: true });
+    await interaction.reply({ content: 'This button can only be used in a server!', flags: MessageFlags.Ephemeral });
     return;
   }
   
   // Check if user has permission to approve/deny
   if (!interaction.memberPermissions?.has(PermissionFlagsBits.BanMembers)) {
-    await interaction.reply({ content: 'You don\'t have permission to make verification decisions.', ephemeral: true });
+    await interaction.reply({ content: 'You don\'t have permission to make verification decisions.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -816,7 +817,7 @@ export async function handleVerificationDecision(interaction: ButtonInteraction)
   // Extract the user ID from the button custom ID
   const userId = customId.split('_').pop();
   if (!userId) {
-    await interaction.reply({ content: 'Invalid verification request.', ephemeral: true });
+    await interaction.reply({ content: 'Invalid verification request.', flags: MessageFlags.Ephemeral });
     return;
   }
   
@@ -828,7 +829,7 @@ export async function handleVerificationDecision(interaction: ButtonInteraction)
     if (!verification) {
       await interaction.reply({
         content: 'This verification request has expired or was already handled.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -840,7 +841,7 @@ export async function handleVerificationDecision(interaction: ButtonInteraction)
     if (!member) {
       await interaction.reply({
         content: 'The user is no longer a member of this server.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       pendingVerifications.delete(userId);
       return;
@@ -891,7 +892,7 @@ export async function handleVerificationDecision(interaction: ButtonInteraction)
     console.error("Error processing verification decision:", error);
     await interaction.reply({
       content: 'There was an error processing this verification. Please try again or check the logs.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -948,7 +949,7 @@ async function processApproval(interaction: ButtonInteraction, member: GuildMemb
   // Notify the moderator
   await interaction.reply({
     content: `Verification for ${member.user.tag} has been approved. They have been given the 18+ role and had their Age Unverified role removed.`,
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -998,13 +999,13 @@ async function processDenial(interaction: ButtonInteraction, member: GuildMember
     // Notify the moderator
     await interaction.reply({
       content: `Verification for ${member.user.tag} has been denied. The user has been banned.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   } catch (banError) {
     console.error("Error banning user:", banError);
     await interaction.reply({
       content: `Failed to ban ${member.user.tag}. Please check my permissions and ban them manually.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
