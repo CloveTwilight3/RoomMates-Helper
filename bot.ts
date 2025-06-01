@@ -502,7 +502,6 @@ async function registerCommands() {
       .toJSON(),
     
     // Add confession command
-    confessCommand.data.toJSON()
   ];
 
   // Add verification commands to the array
@@ -1129,14 +1128,6 @@ async function handleCommandInteraction(interaction: ChatInputCommandInteraction
 
   // Log command usage (but not to Discord to avoid spam)
   console.log(`🔍 Command used: /${commandName} by ${interaction.user.tag}`);
-
-  // Handle confession command
-  if (commandName === 'confess') {
-    await confessCommand.execute(interaction);
-    // Set temporary status for confession submission
-    setTemporaryStatus(client, 'new confession', ActivityType.Custom, 15000, '📝 Submission received');
-    return;
-  }
 
   // Handle warning system commands
   if (['warn', 'warnings', 'clearwarnings', 'mute', 'unmute',
