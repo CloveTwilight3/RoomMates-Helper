@@ -15,13 +15,13 @@ const statusRotations = [
   { name: `roommate gossip`, type: ActivityType.Listening },
   { name: `to your secrets`, type: ActivityType.Listening },
   { name: `age verification`, type: ActivityType.Custom, state: '🔞 Checking IDs' },
-  { name: `the roommate chaos`, type: ActivityType.Custom, state: '🏠 Managing' },
-  { name: `anonymous confessions`, type: ActivityType.Custom, state: '📝 Reading' },
-  { name: `NSFW access requests`, type: ActivityType.Custom, state: '🔒 Processing' },
-  { name: `color role requests`, type: ActivityType.Custom, state: '🎨 Painting' },
-  { name: `warning appeals`, type: ActivityType.Custom, state: '⚖️ Judging' },
-  { name: `"just roommates" energy`, type: ActivityType.Custom, state: '😏 Sure thing' },
-  { name: `the group chat`, type: ActivityType.Custom, state: '💬 Moderating' }
+  { name: `the roommate chaos`, type: ActivityType.Custom, state: '🏠 Managing the roommates chaos' },
+  { name: `anonymous confessions`, type: ActivityType.Custom, state: '📝 Reading anonymous confessions' },
+  { name: `NSFW access requests`, type: ActivityType.Custom, state: '🔒 Processing NSFW access requests' },
+  { name: `color role requests`, type: ActivityType.Custom, state: '🎨 Painting color role requests' },
+  { name: `warning appeals`, type: ActivityType.Custom, state: '⚖️ Judging warning appeals' },
+  { name: `"just roommates" energy`, type: ActivityType.Custom, state: '😏 Sure thing "Just roommates" energy' },
+  { name: `the group chat`, type: ActivityType.Custom, state: '💬 Moderating the group chat' }
 ];
 
 let currentStatusIndex = 0;
