@@ -1,6 +1,6 @@
 /**
- * Database Core Setup
- * -------------------
+ * Database Core Setup (better-sqlite3 version)
+ * --------------------------------------------
  * SQLite database utilities and connection management
  */
 
@@ -10,7 +10,7 @@ import path from 'path';
 
 // Database configuration
 const DB_PATH = process.env.DATABASE_PATH || './data/bot.db';
-const MIGRATIONS_PATH = './src/database/migrations';
+const MIGRATIONS_PATH = './database/migrations';
 
 // Global database instance
 let db: Database.Database | null = null;

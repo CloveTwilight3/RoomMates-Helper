@@ -168,7 +168,7 @@ async function showStats(): Promise<void> {
     console.log('Table Breakdown:');
     
     Object.entries(stats.tables).forEach(([table, count]) => {
-      console.log(`  ${table.padEnd(25)} ${count.toString().padStart(8)} rows`);
+      console.log(`  ${table.padEnd(25)} ${(count as number).toString().padStart(8)} rows`);
     });
     
   } catch (error) {
