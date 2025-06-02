@@ -1,10 +1,8 @@
 {
   "enabled": true,
-  "logChannelId": "1366199447104651344",
+  "logChannelId": "1366828222116790302",
   "ignoredChannels": [],
-  "ignoredUsers": [
-    "1025770042245251122"
-  ],
+  "ignoredUsers": [],
   "logMessageContent": true,
   "logDMs": false,
   "logEdits": true,

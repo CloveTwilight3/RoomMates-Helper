@@ -1,1 +1,40 @@
-{}
+{
+  "1344865612559679529": {
+    "infractions": [
+      {
+        "id": "1344865612559679529-1748312163187-4677",
+        "userId": "623588328733933581",
+        "guildId": "1344865612559679529",
+        "moderatorId": "1025770042245251122",
+        "type": "MUTE",
+        "reason": ":3",
+        "timestamp": 1748312163187,
+        "expiresAt": 1748398563187,
+        "active": false
+      },
+      {
+        "id": "1344865612559679529-1748312262606-7017",
+        "userId": "623588328733933581",
+        "guildId": "1344865612559679529",
+        "moderatorId": "1025770042245251122",
+        "type": "UNMUTE",
+        "reason": "test",
+        "timestamp": 1748312262606,
+        "active": true
+      }
+    ],
+    "appeals": [],
+    "config": {
+      "enabled": true,
+      "dmNotifications": true,
+      "autoDelete": true,
+      "deleteDelay": 5000,
+      "warnThreshold": 3,
+      "allowAppeals": true,
+      "appealCooldown": 24,
+      "logChannelId": "1366828222116790302",
+      "appealChannelId": "1344868644781424683",
+      "mutedRoleId": "1364003682659733615"
+    }
+  }
+}

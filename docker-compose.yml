@@ -5,12 +5,19 @@ services:
     restart: unless-stopped
     volumes:
       - ./roommates_roles.txt:/usr/src/app/roommates_roles.txt
+      # Legacy JSON files (for migration)
       - ./verification_config.json:/usr/src/app/verification_config.json:rw
       - ./message_logger_config.json:/usr/src/app/message_logger_config.json:rw
       - ./infractions.json:/usr/src/app/infractions.json:rw
       - ./health.json:/usr/src/app/health.json:rw
+      # New database directory
+      - ./data:/usr/src/app/data:rw
+      # Migration directories
+      - ./src/database/migrations:/usr/src/app/src/database/migrations:ro
     env_file:
       - .env
+    environment:
+      - DATABASE_PATH=/usr/src/app/data/bot.db
     healthcheck:
       test: ["CMD", "node", "dist/healthcheck.js"]
       interval: 30s

@@ -14,24 +14,45 @@
     "stop:all": "./stop-all.sh",
     "logs:bot": "docker logs -f roommates-helper",
     "logs:forwarder": "tail -f log-forwarder.log",
-    "setup": "./setup.sh"
+    "setup": "./setup.sh",
+    "db:init": "ts-node database-setup.ts init",
+    "db:migrate": "ts-node database-setup.ts migrate",
+    "db:verify": "ts-node database-setup.ts verify",
+    "db:rollback": "ts-node database-setup.ts rollback",
+    "db:backup": "ts-node database-setup.ts backup",
+    "db:stats": "ts-node database-setup.ts stats",
+    "db:health": "ts-node database-setup.ts health",
+    "db:reset": "ts-node database-setup.ts reset",
+    "db:setup": "npm run db:init && npm run db:migrate && npm run db:verify",
+    "migrate:json": "ts-node src/migrations/json-to-db.ts",
+    "migrate:verify": "ts-node database-setup.ts verify",
+    "prestart": "npm run build",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
     "discord",
     "bot",
     "typescript",
     "docker",
-    "logging"
+    "logging",
+    "moderation",
+    "sqlite"
   ],
   "author": "CloveTwilight3",
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "better-sqlite3": "^8.7.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",
+    "@types/better-sqlite3": "^7.6.6",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
