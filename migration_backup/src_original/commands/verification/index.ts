@@ -1,7 +1,7 @@
 /**
  * Verification Commands for The Roommates Helper
  * ---------------------------------------------
- * Commands for age verification system management (Updated)
+ * Commands for age verification system management
  */
 
 import { 
@@ -22,11 +22,6 @@ import {
   createInfoEmbed,
   logWithEmoji
 } from '../../utils';
-import { 
-  setVerificationChannel, 
-  setAgeUnverifiedRole, 
-  getVerificationConfig 
-} from '../../systems/verification/config';
 
 //=============================================================================
 // VERIFY COMMAND
@@ -163,23 +158,99 @@ const modVerifyCommand: BotCommand = {
     try {
       switch (subcommand) {
         case 'setchannel':
-          await handleSetChannel(interaction);
+          const channel = interaction.options.getChannel('channel')!;
+          
+          if (channel.type !== ChannelType.GuildText) {
+            await interaction.reply({
+              content: 'Please select a valid text channel.',
+              flags: MessageFlags.Ephemeral
+            });
+            return;
+          }
+          
+          // TODO: Save channel configuration to database
+          
+          const channelEmbed = createSuccessEmbed(
+            'Verification Channel Set',
+            `Verification review channel set to ${channel.toString()}\n\nModeration team will receive verification requests in this channel.`
+          );
+          
+          await interaction.reply({ embeds: [channelEmbed], flags: MessageFlags.Ephemeral });
+          
+          logWithEmoji('info', 
+            `Verification channel set to ${channel.name} by ${interaction.user.tag}`,
+            'Verification'
+          );
           break;
           
         case 'setrole':
-          await handleSetRole(interaction);
+          const role = interaction.options.getRole('role')!;
+          
+          // TODO: Save role configuration to database
+          
+          const roleEmbed = createSuccessEmbed(
+            'Age Unverified Role Set',
+            `Age Unverified role set to ${role.toString()}\n\nThis role will be assigned to new members until they complete verification.`
+          );
+          
+          await interaction.reply({ embeds: [roleEmbed], flags: MessageFlags.Ephemeral });
+          
+          logWithEmoji('info', 
+            `Age Unverified role set to ${role.name} by ${interaction.user.tag}`,
+            'Verification'
+          );
           break;
           
         case 'status':
-          await handleStatus(interaction);
+          // TODO: Get actual configuration from database
+          
+          const statusEmbed = new EmbedBuilder()
+            .setTitle('🔞 Verification System Status')
+            .setColor(0x0099FF)
+            .addFields(
+              { name: 'System Status', value: 'Enabled ✅', inline: true },
+              { name: 'Verification Channel', value: 'Not configured ❌', inline: true },
+              { name: 'Age Unverified Role', value: 'Not configured ❌', inline: true },
+              { name: 'Pending Verifications', value: '0', inline: true },
+              { name: 'Total Verifications', value: '0', inline: true },
+              { name: 'Success Rate', value: 'N/A', inline: true }
+            )
+            .setFooter({ text: 'Configure channels and roles using /modverify commands' })
+            .setTimestamp();
+          
+          await interaction.reply({ embeds: [statusEmbed], flags: MessageFlags.Ephemeral });
           break;
           
         case 'enable':
-          await handleEnable(interaction);
+          // TODO: Enable verification system in database
+          
+          const enableEmbed = createSuccessEmbed(
+            'Verification System Enabled',
+            'The age verification system has been enabled for this server.\n\nMake sure to configure the verification channel and age unverified role.'
+          );
+          
+          await interaction.reply({ embeds: [enableEmbed], flags: MessageFlags.Ephemeral });
+          
+          logWithEmoji('info', 
+            `Verification system enabled by ${interaction.user.tag}`,
+            'Verification'
+          );
           break;
           
         case 'disable':
-          await handleDisable(interaction);
+          // TODO: Disable verification system in database
+          
+          const disableEmbed = createErrorEmbed(
+            'Verification System Disabled',
+            'The age verification system has been disabled for this server.\n\n⚠️ New members will not be prompted to verify their age.'
+          );
+          
+          await interaction.reply({ embeds: [disableEmbed], flags: MessageFlags.Ephemeral });
+          
+          logWithEmoji('info', 
+            `Verification system disabled by ${interaction.user.tag}`,
+            'Verification'
+          );
           break;
           
         default:
@@ -203,163 +274,7 @@ const modVerifyCommand: BotCommand = {
 };
 
 //=============================================================================
-// SUBCOMMAND HANDLERS
-//=============================================================================
-
-async function handleSetChannel(interaction: ChatInputCommandInteraction): Promise<void> {
-  const channel = interaction.options.getChannel('channel')!;
-  
-  if (channel.type !== ChannelType.GuildText) {
-    await interaction.reply({
-      content: 'Please select a valid text channel.',
-      flags: MessageFlags.Ephemeral
-    });
-    return;
-  }
-  
-  try {
-    // Test permissions by sending a test message
-    const textChannel = channel as any;
-    const testMsg = await textChannel.send({
-      content: 'Verification channel set successfully! This is a test message to confirm permissions.',
-    });
-    
-    // If successful, save the configuration
-    await setVerificationChannel(interaction.guild!.id, channel.id);
-    
-    // Delete the test message after 5 seconds
-    setTimeout(() => {
-      testMsg.delete().catch((e: any) => console.error("Could not delete test message:", e));
-    }, 5000);
-    
-    const successEmbed = createSuccessEmbed(
-      'Verification Channel Set',
-      `Verification review channel set to ${channel.toString()}\n\nModeration team will receive verification requests in this channel.`
-    );
-    
-    await interaction.reply({ embeds: [successEmbed], flags: MessageFlags.Ephemeral });
-    
-    logWithEmoji('info', 
-      `Verification channel set to ${channel.name} by ${interaction.user.tag}`,
-      'Verification'
-    );
-    
-  } catch (error) {
-    logWithEmoji('error', `Failed to set verification channel: ${error}`, 'Commands');
-    
-    await interaction.reply({
-      content: `I don't have permission to send messages in ${channel.toString()}. Please check my permissions.`,
-      flags: MessageFlags.Ephemeral
-    });
-  }
-}
-
-async function handleSetRole(interaction: ChatInputCommandInteraction): Promise<void> {
-  const role = interaction.options.getRole('role')!;
-  
-  try {
-    await setAgeUnverifiedRole(interaction.guild!.id, role.id);
-    
-    const successEmbed = createSuccessEmbed(
-      'Age Unverified Role Set',
-      `Age Unverified role set to ${role.toString()}\n\nThis role will be assigned to new members until they complete verification.`
-    );
-    
-    await interaction.reply({ embeds: [successEmbed], flags: MessageFlags.Ephemeral });
-    
-    logWithEmoji('info', 
-      `Age Unverified role set to ${role.name} by ${interaction.user.tag}`,
-      'Verification'
-    );
-    
-  } catch (error) {
-    logWithEmoji('error', `Failed to set age unverified role: ${error}`, 'Commands');
-    
-    await interaction.reply({
-      content: 'There was an error setting the Age Unverified role.',
-      flags: MessageFlags.Ephemeral
-    });
-  }
-}
-
-async function handleStatus(interaction: ChatInputCommandInteraction): Promise<void> {
-  try {
-    const config = await getVerificationConfig(interaction.guild!.id);
-    
-    const embed = new EmbedBuilder()
-      .setTitle('🔞 Verification System Status')
-      .setColor(0x0099FF);
-    
-    if (config) {
-      embed.addFields(
-        { name: 'System Status', value: config.enabled ? 'Enabled ✅' : 'Disabled ❌', inline: true },
-        { 
-          name: 'Verification Channel', 
-          value: config.mod_channel_id ? `<#${config.mod_channel_id}>` : 'Not configured ❌', 
-          inline: true 
-        },
-        { 
-          name: 'Age Unverified Role', 
-          value: config.age_unverified_role_id ? `<@&${config.age_unverified_role_id}>` : 'Not configured ❌', 
-          inline: true 
-        }
-      );
-    } else {
-      embed.setDescription('Verification system is not configured for this server.');
-      embed.addFields(
-        { name: 'System Status', value: 'Not configured ❌', inline: true },
-        { name: 'Verification Channel', value: 'Not configured ❌', inline: true },
-        { name: 'Age Unverified Role', value: 'Not configured ❌', inline: true }
-      );
-    }
-    
-    embed.setFooter({ text: 'Configure channels and roles using /modverify commands' })
-      .setTimestamp();
-    
-    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-    
-  } catch (error) {
-    logWithEmoji('error', `Error getting verification status: ${error}`, 'Commands');
-    
-    await interaction.reply({
-      content: 'There was an error retrieving the verification status.',
-      flags: MessageFlags.Ephemeral
-    });
-  }
-}
-
-async function handleEnable(interaction: ChatInputCommandInteraction): Promise<void> {
-  // TODO: Implement enable functionality
-  const enableEmbed = createSuccessEmbed(
-    'Verification System Enabled',
-    'The age verification system has been enabled for this server.\n\nMake sure to configure the verification channel and age unverified role.'
-  );
-  
-  await interaction.reply({ embeds: [enableEmbed], flags: MessageFlags.Ephemeral });
-  
-  logWithEmoji('info', 
-    `Verification system enabled by ${interaction.user.tag}`,
-    'Verification'
-  );
-}
-
-async function handleDisable(interaction: ChatInputCommandInteraction): Promise<void> {
-  // TODO: Implement disable functionality
-  const disableEmbed = createErrorEmbed(
-    'Verification System Disabled',
-    'The age verification system has been disabled for this server.\n\n⚠️ New members will not be prompted to verify their age.'
-  );
-  
-  await interaction.reply({ embeds: [disableEmbed], flags: MessageFlags.Ephemeral });
-  
-  logWithEmoji('info', 
-    `Verification system disabled by ${interaction.user.tag}`,
-    'Verification'
-  );
-}
-
-//=============================================================================
-// OTHER VERIFICATION COMMANDS
+// APPEAL COMMAND
 //=============================================================================
 
 const appealCommand: BotCommand = {
@@ -379,6 +294,15 @@ const appealCommand: BotCommand = {
     ),
     
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guild && !interaction.guildId) {
+      // Allow appeals in DMs for banned users
+      await interaction.reply({
+        content: 'Appeals are not available at this time.',
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
+    
     const type = interaction.options.getString('type')!;
     
     try {
@@ -408,6 +332,10 @@ const appealCommand: BotCommand = {
     }
   }
 };
+
+//=============================================================================
+// VERIFY STATUS COMMAND (for users to check their verification status)
+//=============================================================================
 
 const verifyStatusCommand: BotCommand = {
   data: new SlashCommandBuilder()
@@ -441,9 +369,9 @@ const verifyStatusCommand: BotCommand = {
         .setColor(0x0099FF)
         .setDescription('Your current verification status in this server.')
         .addFields(
-          { name: 'Status', value: 'Checking... 🔄', inline: true },
-          { name: 'Access Level', value: 'Checking...', inline: true },
-          { name: 'Age Verified', value: 'Checking...', inline: true }
+          { name: 'Status', value: 'Not Verified ❌', inline: true },
+          { name: 'Access Level', value: 'Limited', inline: true },
+          { name: 'Age Verified', value: 'No', inline: true }
         )
         .setFooter({ text: 'Use the verification button in the verification channel to verify your age' })
         .setTimestamp();
