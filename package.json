@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/bot.js",
-    "dev": "ts-node bot.ts",
+    "dev": "ts-node src/bot.ts",
+    "dev:launcher": "ts-node bot.ts",
     "fetch-roles": "ts-node fetch-server-roles.ts",
     "log-forwarder": "ts-node docker-log-forwarder.ts",
     "log-forwarder:build": "npm run build && node dist/docker-log-forwarder.js",
@@ -24,10 +25,15 @@
     "db:health": "ts-node database-setup.ts health",
     "db:reset": "ts-node database-setup.ts reset",
     "db:setup": "npm run db:init && npm run db:migrate && npm run db:verify",
-    "migrate:json": "ts-node src/migrations/json-to-db.ts",
+    "migrate:json": "ts-node migrations/json-to-db.ts",
     "migrate:verify": "ts-node database-setup.ts verify",
     "prestart": "npm run build",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "clean": "rm -rf dist/",
+    "clean:build": "npm run clean && npm run build",
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"Linting not configured yet\"",
+    "dev:watch": "ts-node --watch src/bot.ts"
   },
   "keywords": [
     "discord",
