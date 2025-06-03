@@ -2,15 +2,15 @@
   "name": "roommates-helper",
   "version": "1.0.0",
   "description": "The Roommates Helper - A utility bot for the Roommates Discord server",
-  "main": "dist/bot.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/bot.js",
-    "dev": "ts-node src/bot.ts",
-    "dev:launcher": "ts-node bot.ts",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dev:launcher": "ts-node src/index.ts",
     "fetch-roles": "ts-node src/utils/fetch-server-roles.ts",
     "log-forwarder": "ts-node src/utils/docker-log-forwarder.ts",
-    "log-forwarder:build": "npm run build && node dist/docker-log-forwarder.js",
+    "log-forwarder:build": "npm run build && node dist/utils/docker-log-forwarder.js",
     "start:with-logging": "./start-with-logging.sh",
     "stop:all": "./stop-all.sh",
     "logs:bot": "docker logs -f roommates-helper",
@@ -33,7 +33,7 @@
     "clean:build": "npm run clean && npm run build",
     "type-check": "tsc --noEmit",
     "lint": "echo \"Linting not configured yet\"",
-    "dev:watch": "ts-node --watch src/bot.ts"
+    "dev:watch": "ts-node --watch src/index.ts"
   },
   "keywords": [
     "discord",

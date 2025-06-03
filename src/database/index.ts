@@ -60,6 +60,13 @@ export async function setupDatabase(): Promise<void> {
 }
 
 /**
+ * Initialize database (alias for setupDatabase for compatibility)
+ */
+export async function initializeDatabase(): Promise<void> {
+  return setupDatabase();
+}
+
+/**
  * Get the database instance
  */
 export function getDatabase(): Database.Database {
@@ -74,10 +81,14 @@ export function getDatabase(): Database.Database {
  */
 export function closeDatabase(): void {
   if (db) {
-    db.close();
-    // db = null;
-    logWithEmoji('info', 'Database connection closed', 'Database');
+    try {
+      db.close();
+      logWithEmoji('info', 'Database connection closed', 'Database');
+    } catch (error) {
+      logWithEmoji('error', `Error closing database: ${error}`, 'Database');
+    }
   }
+  db = null;
 }
 
 //=============================================================================
@@ -131,8 +142,8 @@ async function runMigrations(): Promise<void> {
         
         // Execute migration in a transaction
         const transaction = db.transaction(() => {
-          db.exec(migrationSQL);
-          db
+          db!.exec(migrationSQL);
+          db!
             .prepare('INSERT INTO migrations (filename) VALUES (?)')
             .run(filename);
         });
@@ -344,5 +355,3 @@ export {
   DB_PATH,
   MIGRATIONS_PATH
 };
-
-export { initializeDatabase } from './setup';

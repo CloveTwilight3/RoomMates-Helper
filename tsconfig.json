@@ -7,15 +7,14 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./src",
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
     }
   },
   "include": [
-    "src/**/*",
-    "bot.ts"
+    "src/**/*"
   ],
   "exclude": ["node_modules", "dist", "migration_backup"]
 }

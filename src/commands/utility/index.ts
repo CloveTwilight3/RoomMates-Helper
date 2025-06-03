@@ -10,7 +10,8 @@ import {
   EmbedBuilder,
   MessageFlags,
   PermissionFlagsBits,
-  ActivityType
+  ActivityType,
+  TextChannel
 } from 'discord.js';
 import { BotCommand } from '../../types';
 import { 
@@ -38,7 +39,7 @@ const colorCommand: BotCommand = {
       subcommand
         .setName('remove')
         .setDescription('Remove your current color role')
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -85,7 +86,7 @@ const nsfwCommand: BotCommand = {
         .setName('value')
         .setDescription('Enable (true) or disable (false) NSFW access')
         .setRequired(true)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -119,7 +120,7 @@ const nsfwCommand: BotCommand = {
 const serverInfoCommand: BotCommand = {
   data: new SlashCommandBuilder()
     .setName('serverinfo')
-    .setDescription('Display information about the current server'),
+    .setDescription('Display information about the current server') as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -244,7 +245,7 @@ const echoCommand: BotCommand = {
         .setName('channel')
         .setDescription('The channel to send the message to (defaults to current channel)')
         .setRequired(false)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -294,7 +295,7 @@ const echoCommand: BotCommand = {
       }
       
       // Send the echo message
-      await channelToUse.send(message);
+      await (channelToUse as TextChannel).send(message);
       
       // Confirm to the moderator
       const confirmMessage = targetChannel 
@@ -330,7 +331,7 @@ const echoCommand: BotCommand = {
 const pingCommand: BotCommand = {
   data: new SlashCommandBuilder()
     .setName('ping')
-    .setDescription('Check the bot\'s response time'),
+    .setDescription('Check the bot\'s response time') as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     const sent = await interaction.reply({ 
@@ -367,7 +368,7 @@ const userInfoCommand: BotCommand = {
         .setName('user')
         .setDescription('The user to get information about (defaults to yourself)')
         .setRequired(false)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user') || interaction.user;

@@ -50,7 +50,7 @@ const warnCommand: BotCommand = {
         .setName('silent')
         .setDescription('Whether to send the warning privately (default: false)')
         .setRequired(false)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -140,7 +140,7 @@ const muteCommand: BotCommand = {
         .setName('reason')
         .setDescription('The reason for the mute')
         .setRequired(true)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -245,7 +245,7 @@ const banCommand: BotCommand = {
         .setRequired(false)
         .setMinValue(0)
         .setMaxValue(7)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -321,7 +321,7 @@ const warningsCommand: BotCommand = {
         .setName('user')
         .setDescription('The user to check warnings for')
         .setRequired(true)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -405,7 +405,7 @@ const modConfigCommand: BotCommand = {
             .setDescription('The role to use for muted users')
             .setRequired(true)
         )
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -503,7 +503,7 @@ const checkCommand: BotCommand = {
         .setName('user')
         .setDescription('The user to check')
         .setRequired(true)
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {

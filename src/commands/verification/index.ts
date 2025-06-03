@@ -36,7 +36,7 @@ const verifyCommand: BotCommand = {
   data: new SlashCommandBuilder()
     .setName('verify')
     .setDescription('Start the age verification process or create verification prompt')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -147,7 +147,7 @@ const modVerifyCommand: BotCommand = {
       subcommand
         .setName('disable')
         .setDescription('Disable the verification system')
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {
@@ -376,7 +376,7 @@ const appealCommand: BotCommand = {
           { name: 'Mute', value: 'MUTE' },
           { name: 'Ban', value: 'BAN' }
         )
-    ),
+    ) as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type')!;
@@ -412,7 +412,7 @@ const appealCommand: BotCommand = {
 const verifyStatusCommand: BotCommand = {
   data: new SlashCommandBuilder()
     .setName('verifystatus')
-    .setDescription('Check your verification status'),
+    .setDescription('Check your verification status') as SlashCommandBuilder,
     
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild) {

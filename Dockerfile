@@ -20,7 +20,7 @@ ENV NODE_ENV=production
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node dist/healthcheck.js || exit 1
+  CMD node dist/utils/healthcheck.js || exit 1
 
 # Run the bot using the compiled JavaScript
-CMD ["node", "dist/bot.js"]
+CMD ["node", "dist/index.js"]
