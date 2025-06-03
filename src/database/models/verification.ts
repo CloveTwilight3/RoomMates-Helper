@@ -259,12 +259,3 @@ export class VerificationLogModel {
     `, [guildId, limit]);
   }
 }
-
-//=============================================================================
-// EXPORTS
-//=============================================================================
-
-export {
-  VerificationConfigModel,
-  VerificationLogModel
-};

@@ -15,7 +15,7 @@ import { setupDatabase } from './database';
 import { setupCommands } from './commands';
 import { setupSystems } from './systems';
 import { setupLogging } from './utils';
-import { writeHealthStatus } from '../healthcheck'; // Keep healthcheck in root for Docker
+import { writeHealthStatus } from './utils/healthcheck'; // Keep healthcheck in root for Docker
 
 // Load environment variables
 dotenv.config();

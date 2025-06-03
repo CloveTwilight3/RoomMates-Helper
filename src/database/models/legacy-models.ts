@@ -4,7 +4,7 @@
  * Data access layer for all database operations
  */
 
-import { executeQuery, executeQueryOne, executeUpdate, executeTransaction } from '../database/database';
+import { executeQuery, executeQueryOne, executeUpdate, executeTransaction } from '../index';
 
 //=============================================================================
 // TYPES AND INTERFACES

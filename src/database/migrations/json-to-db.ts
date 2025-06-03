@@ -6,7 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { initializeDatabase, executeUpdate, executeTransaction, backupDatabase } from '../database/database';
+import { initializeDatabase, executeUpdate, executeTransaction, backupDatabase } from '../index';
 
 // File paths for existing JSON data
 const JSON_FILES = {

@@ -4,7 +4,7 @@
  * Sets up the database and migrates from JSON files
  */
 
-import { initializeDatabase, getDatabaseStats, checkDatabaseHealth, backupDatabase } from './database/database';
+import { initializeDatabase, getDatabaseStats, checkDatabaseHealth, backupDatabase } from './index';
 import { migrateJsonToDatabase, verifyMigration, rollbackMigration } from './migrations/json-to-db';
 import fs from 'fs';
 

@@ -75,7 +75,7 @@ export function getDatabase(): Database.Database {
 export function closeDatabase(): void {
   if (db) {
     db.close();
-    db = null;
+    // db = null;
     logWithEmoji('info', 'Database connection closed', 'Database');
   }
 }
@@ -344,3 +344,5 @@ export {
   DB_PATH,
   MIGRATIONS_PATH
 };
+
+export { initializeDatabase } from './setup';
